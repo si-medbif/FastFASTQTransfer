@@ -1,4 +1,5 @@
 import sys
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -250,30 +251,34 @@ def model_6 (X,Y, is_encode_feature=False) :
     evaluate_model(model, hist, X_transformed, Y, Y_transformed, 'model_6')
 
 def main (args) :
+    # Create the folder for storing result
+    os.mkdir('models')
+    os.mkdir('models/charts')
+    os.mkdir('models/charts/accuracy')
+    os.mkdir('models/charts/loss')
+
+    os.mkdir('Model_Hist')
+
     # Load Data
     dataset = pd.read_csv(args[1], header=None)
 
-    # # Filter Score 37 Out
+    X = dataset.iloc[:,:504].values
+    Y = dataset.iloc[:,505].values
+    
+    # Filter Score 37 Out
     # dataset = dataset[dataset.iloc[:,100] != 37]
 
-    # X = dataset.iloc[:,:504].values
-
     # Select only Significance Features (19 Features)
-    X = dataset.iloc[:,[500,4,274,499,189,169,164,0,3,404,493,496,480,405,485,490,495,502,503]].values
-    Y = dataset.iloc[:,505].values
+    # X = dataset.iloc[:,[500,4,274,499,189,169,164,0,3,404,493,496,480,405,485,490,495,502,503]].values
 
-    # Write result header
-    result_file = open('performance_result.out', 'w')
-    result_file.write('Experiment_Name,Loss,Accuracy\n')
-    result_file.close()
 
     # evaluate_predicted_model('models/model_5.h5', X, Y)
     # model_1(X,Y)
     # model_2(X,Y)
-    model_3(X,Y)
-    model_4(X,Y)
-    model_5(X,Y)
-    model_6(X,Y)
+    # model_3(X,Y)
+    # model_4(X,Y)
+    # model_5(X,Y)
+    # model_6(X,Y)
     
 
 if __name__ == "__main__":
