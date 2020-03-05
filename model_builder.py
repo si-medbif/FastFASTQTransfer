@@ -9,7 +9,6 @@ from sklearn.preprocessing import OneHotEncoder
 from keras.layers import Dense, Embedding, LSTM
 from keras import optimizers
 
-
 # UTILITIES FUNCTION STARTS HERE!
 
 def encode_score (scores) :
@@ -284,17 +283,14 @@ def model_arch_experiment (X,Y, model_name, is_encode_feature=False, layer_confi
 
 def main (args) :
     # Create the folder for storing result
-    os.mkdir('models')
-    os.mkdir('models/charts')
-    os.mkdir('models/charts/accuracy')
-    os.mkdir('models/charts/loss')
-
-    os.mkdir('Model_Hist')
-
+    os.makedirs('models/charts/accuracy', exist_ok=True)
+    os.makedirs('models/charts/loss', exist_ok=True)
+    os.makedirs('Model_Hist', exist_ok=True)
+    
     # Load Data
     dataset = pd.read_csv(args[1], header=None)
 
-    X = dataset.iloc[:,:504].values
+    X = dataset.iloc[:,:505].values
     Y = dataset.iloc[:,505].values
     
     # Filter Score 37 Out
@@ -302,7 +298,6 @@ def main (args) :
 
     # Select only Significance Features (19 Features)
     # X = dataset.iloc[:,[500,4,274,499,189,169,164,0,3,404,493,496,480,405,485,490,495,502,503]].values
-
 
     # evaluate_predicted_model('models/model_5.h5', X, Y)
     # model_1(X,Y)
