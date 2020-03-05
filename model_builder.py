@@ -250,6 +250,38 @@ def model_6 (X,Y, is_encode_feature=False) :
     print("Model 6")
     evaluate_model(model, hist, X_transformed, Y, Y_transformed, 'model_6')
 
+
+# This function will be used to test the model arch by changing the model config
+def model_arch_experiment (X,Y, model_name, is_encode_feature=False, layer_configuration=[500]) :
+    if is_encode_feature :
+        X_transformed = build_default_feature(X)
+    else :
+        X_transformed = X
+
+    X_transformed = np.array(X_transformed)
+    Y_transformed = np.array(encode_score(Y))
+
+    model = Sequential()
+
+    # Hidden Layer with ReLu Function
+    for no_of_node in layer_configuration :
+        if no_of_node == 0:
+            continue
+
+        model.add(Dense(no_of_node, activation='relu'))
+
+    # Output Layer with Softmax function
+    model.add(Dense(43, activation='softmax'))
+
+    model.compile(optimizer='sgd', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
+    hist = model.fit(X_transformed, Y_transformed, epochs=100, validation_data=[X_transformed, Y_transformed])
+
+    # Save Model for later use
+    model.save('models/' + model_name)
+
+    evaluate_model(model, hist, X_transformed, Y, Y_transformed, model_name)
+
 def main (args) :
     # Create the folder for storing result
     os.mkdir('models')
@@ -280,6 +312,9 @@ def main (args) :
     # model_5(X,Y)
     # model_6(X,Y)
     
+    for layer_1_node_counter in range(100,500+1,100): 
+        for layer_2_node_counter in range(0,500+1, 100) :
+            model_arch_experiment (X,Y, 'l1_' + str(layer_1_node_counter) + '_l2_' + str(layer_2_node_counter), is_encode_feature=False, layer_configuration=[layer_1_node_counter, layer_2_node_counter])
 
 if __name__ == "__main__":
     main(sys.argv)
