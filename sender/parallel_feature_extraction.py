@@ -19,7 +19,7 @@ def check_file_integrity (file_path, chk_record=20) :
             current_record_length = 0
 
         # No of record is sufficient
-        if len(record_length == chk_record) :
+        if len(record_length) == chk_record :
             break  
     
     # If all of the record has the same length > mean length must be equals to all record
