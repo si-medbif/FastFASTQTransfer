@@ -45,6 +45,19 @@ def is_eof (file_path, line_number) :
 
     return line == ''
     
+def base_mapper (base) :
+    if base.upper() == 'A' :
+        return 1
+    elif base.upper() == 'T' :
+        return 2
+    elif base.upper() == 'C' :
+        return 3
+    elif base.upper() == 'G' :
+        return 4
+    else :
+        # Unknown Base (N)
+        return 0
+
 def read_n_line (file_path, start_line, end_line) :
     if start_line > end_line :
         return None
@@ -81,17 +94,7 @@ def produce_feature_from_read (read_line) :
     final_feature = []
 
     for base in read_line :
-        if base.upper() == 'A' :
-            final_feature.append(1)
-        elif base.upper() == 'T' :
-            final_feature.append(2)
-        elif base.upper() == 'C' :
-            final_feature.append(3)
-        elif base.upper() == 'G' :
-            final_feature.append(4)
-        else :
-            # Unknown Base (N)
-            final_feature.append(0)
+        final_feature.append(base_mapper(base))
     
     return final_feature
 
