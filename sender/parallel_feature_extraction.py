@@ -11,13 +11,13 @@ def check_file_integrity (file_path, chk_record=20) :
     current_record_length = 0
     previous_line = ""
     while True:
-        line = input_file.readline()
-        current_record_length += len(line)
-
         # Trim New Line Character
+        line = input_file.readline()
+        
         if line[-1] == "\n" :
             line = line[:-1]
 
+        current_record_length += len(line)
         previous_line = line
 
         if previous_line == "+" :
@@ -50,7 +50,7 @@ def is_eof (file_path, line_number) :
     input_file.close()
 
     return line == ''
-    
+
 def base_mapper (base) :
     if base.upper() == 'A' :
         return 1
