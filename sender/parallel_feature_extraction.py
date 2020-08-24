@@ -12,12 +12,12 @@ def check_file_integrity (file_path, chk_record=20) :
     previous_line = ""
     while True:
         line = input_file.readline()
+        current_record_length += len(line)
 
         # Trim New Line Character
         if line[-1] == "\n" :
             line = line[:-1]
 
-        current_record_length += len(line)
         previous_line = line
 
         if previous_line == "+" :
