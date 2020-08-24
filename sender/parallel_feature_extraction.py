@@ -137,9 +137,6 @@ def create_chunk_feature_file (read_file_path, qscore_file_path, feature_file_pa
     feature_file.close()
 
 def parallel_extract_feature (read_file_path, qscore_file_path, feature_file_path, chunk_size=500000) :
-    read_file_path = sys.argv[1]
-    qscore_file_path = sys.argv[2]
-    feature_file_path = sys.argv[3]
 
     feature_file = open(feature_file_path, 'w')
     feature_file.flush()
