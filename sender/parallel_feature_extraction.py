@@ -10,7 +10,13 @@ def check_file_integrity (file_path, chk_record=20) :
 
     current_record_length = 0
     previous_line = ""
-    for line in input_file.readline() :
+    while True:
+        line = input_file.readline()
+
+        # Trim New Line Character
+        if line[-1] == "\n" :
+            line = line[:-1]
+
         current_record_length += len(line)
         previous_line = line
 
