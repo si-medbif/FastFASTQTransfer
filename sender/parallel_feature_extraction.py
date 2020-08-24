@@ -1,7 +1,34 @@
 from joblib import Parallel, delayed
+import statistics
 import sys
 
 # Extracting Feature into Feature File
+
+def check_file_integrity (file_path, chk_record=20) :
+    input_file = open(file_path, 'r')
+    record_length = []
+
+    current_record_length = 0
+    previous_line = ""
+    for line in input_file.readline() :
+        current_record_length += len(line)
+        previous_line = line
+
+        if previous_line == "+" :
+            record_length.append(current_record_length)
+            current_record_length = 0
+
+        # No of record is sufficient
+        if len(record_length == chk_record) :
+            break  
+    
+    # If all of the record has the same length > mean length must be equals to all record
+    if statistics.mean(record_length) == record_length[0] :
+        print('Non Constant Length Record Exitting...')
+        exit()
+
+    input_file.close()
+    return record_length[0]
 
 def is_eof (file_path, line_number) :
     input_file = open(file_path, 'r')
