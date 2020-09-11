@@ -17,12 +17,14 @@ def process_position_data (position_data, line) :
 
     return position_data
 
-def plot_boxplot (data, file_name) :
+def plot_boxplot (data, file_name, destination_path) :
     boxplot = sns.boxplot(data = pd.DataFrame(data), x='Position within Read', y='Quality Score').set_title("Quality Score Across All Bases (" + file_name + ")")
     boxplot.figure.set_size_inches(25, 9)
-    boxplot.figure.savefig(file_name.split('.')[0] + '_score_boxplot.png', dpi=300)
+    boxplot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_score_boxplot.png', dpi=300)
 
-def process_single_file (input_path) :
+def process_single_file (input_path, destination_path) :
+    print('Plotting', input_path.split('/')[-1])
+
     input_file = open(input_path, 'r')
     line = input_file.readline().replace('\n', '')
     prev = ''
@@ -38,19 +40,24 @@ def process_single_file (input_path) :
 
     input_file.close()
 
-    plot_boxplot(position_data, input_path.split('/')[-1])
+    plot_boxplot(position_data, input_path.split('/')[-1], destination_path)
     return position_data
 
 def main(args) :
     source_path = args[1]
     
+    if len(args) > 2 :
+        destination_path = args[2]
+    else :
+        destination_path = ''
+
     file_list = glob.glob(source_path + '/*')
 
     if type(file_list) == bool or len(file_list) == 0 :
-        process_single_file(source_path)
+        process_single_file(source_path, destination_path)
     else :
-        Parallel(n_jobs=-1, prefer="processes", verbose=10)(
-            delayed(process_position_data)(file_name)
+        Parallel(n_jobs=1, prefer="processes", verbose=10)(
+            delayed(process_single_file)(file_name, destination_path)
             for file_name in file_list
         )
 
