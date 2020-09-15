@@ -47,13 +47,46 @@ def get_file_name (path_to_file) :
     else :
         return splited_path[-1]
 
-def main(args) :
-    # Get Base File Name
+def prepare_file_list () :
     original_file_list = glob.glob('*.fastq.gz')
     file_list = []
     for file_name in original_file_list :
         file_list.append(file_name.split('_')[0])
     file_list = list(set(file_list))
+    return file_list
+
+def run_experiment (file_name, no_of_run, output_file) :
+    # Compression and Decompression Experiment
+    avg_compress_size, avg_compression_time, avg_decompression_time, avg_transmit_time = 0,0,0,0
+
+    for i in range(no_of_run) :
+        # Compression Process
+        start_time = time.time()
+        os.system('gzip ' + file_name)
+        compression_time = time.time() - start_time
+        avg_compression_time += compression_time
+
+        # Measured Compressed Size
+        compressed_file_size = os.stat(file_name + '.gz').st_size
+        avg_compress_size += compressed_file_size
+
+        # Decompression Process
+        start_time = time.time()
+        os.system('gzip -d ' + file_name + '.gz')
+        decompression_time = time.time() - start_time
+        avg_decompression_time += decompression_time
+
+        # Get Tranfer Time
+        transmit_time = calculate_transfer_time(compressed_file_size)
+        avg_transmit_time += transmit_time
+
+        output_file.write(str([i, file_name, os.stat(file_name).st_size, compressed_file_size, transmit_time, compression_time, decompression_time])[1:-1].replace(', ', ',') + '\n')
+
+        return avg_compress_size/no_of_run, avg_compression_time/no_of_run, avg_decompression_time/no_of_run, avg_transmit_time/no_of_run
+
+def main(args) :
+    # Get Base File Name
+    file_list = prepare_file_list()
 
     for base_file_name in file_list :
         unzip_merge_paired_end(base_file_name)
@@ -67,44 +100,10 @@ def main(args) :
         # Append Header
         output_file.write("Experiment Number,File Name,Original Size,Compressed Size,Transmitted Time,Compression Time,Decompression Time\n")
 
-        avg_compress_size, avg_compression_time, avg_decompression_time, avg_transmit_time = 0,0,0,0
+        avg_compress_size, avg_compression_time, avg_decompression_time, avg_transmit_time = run_experiment(input_file_name, args['no_of_run'], output_file)
 
-        for i in range(args['no_of_run']) :
-            # Compression Process
-            start_time = time.time()
-            os.system('gzip ' + input_file_name)
-            compression_time = time.time() - start_time
-            avg_compression_time += compression_time
-
-            # Measure Compressed Size
-            compressed_file_size = os.stat(input_file_name + '.gz').st_size
-            avg_compress_size += compressed_file_size
-
-            # Change name of compress file
-            # os.system('mv ' + input_file_name + '.gz temp.gz')
-
-            # Decompression Process
-            start_time = time.time()
-            os.system('gunzip ' + input_file_name + '.gz')
-            decompression_time = time.time() - start_time
-            avg_decompression_time += decompression_time
-
-            # Clean Decompress File for Next Experiment
-            # os.system('rm temp')
-
-            # Get Tranfer Time
-            transmit_time = calculate_transfer_time(compressed_file_size)
-            avg_transmit_time += transmit_time
-
-            output_file.write(str([i, input_file_name, os.stat(input_file_name).st_size, compressed_file_size, transmit_time, compression_time, decompression_time])[1:-1].replace(', ', ',') + '\n')
-
-        avg_compress_size = avg_compress_size / args['no_of_run']
-        avg_transmit_time = avg_transmit_time / args['no_of_run']
-        avg_compression_time = avg_compression_time / args['no_of_run']
-        avg_decompression_time = avg_decompression_time / args['no_of_run']
-        
         # Write Final Line with Average
-        output_file.write(str([0, input_file_name, os.stat(input_file_name).st_size, avg_compress_size, avg_transmit_time, avg_compression_time, avg_decompression_time])[1:-1].replace(', ', ',') + "\n")
+        output_file.write(str([-1, input_file_name, os.stat(input_file_name).st_size, avg_compress_size, avg_transmit_time, avg_compression_time, avg_decompression_time])[1:-1].replace(', ', ',') + "\n")
         output_file.close()
 
 if __name__ == "__main__":
