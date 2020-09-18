@@ -53,12 +53,14 @@ def average_position_content (position_content, no_of_record) :
 
     return position_content
 
-def plot_line_plot (data, file_name) :
+def plot_line_plot (data, file_name, destination_path) :
     line_plot = sns.lineplot(data=data, x='Position', y='Content Percentages', hue='%').set_title("Sequence content across all bases (" + file_name + ")")
     line_plot.figure.set_size_inches(25, 9)
-    line_plot.figure.savefig(file_name.split('.')[0] + '_base_content.png', dpi=300)
+    line_plot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_base_content.png', dpi=300)
 
-def process_single_file (source_path) :
+    plt.close()
+
+def process_single_file (source_path, destination_path) :
     source_file = open(source_path, 'r')
     
     position_content = None
@@ -82,11 +84,29 @@ def process_single_file (source_path) :
     source_file.close()
 
     position_content = transform_for_line_plot(transform_position_content_name(average_position_content(position_content, no_of_record)))
-    plot_line_plot(position_content, source_path.split('/')[-1])
+    plot_line_plot(position_content, source_path.split('/')[-1], destination_path)
+
+    return position_content
 
 def main (args) :
-    process_single_file(args[1])
+    if len(args) > 1 :
+        destination_path = args[-1]
+    else :
+        destination_path = ''
+    
+    file_list = glob.glob(args[1] + '/*.fastq')
+
+    print(len(file_list), 'Sample(s) to process.')
+    
+    if type(file_list) == bool or len(file_list) == 0 :
+        process_single_file(args[1], destination_path)
+    else:
+        Parallel(n_jobs=-1, prefer="processes", verbose=10)(
+            delayed(process_single_file)(file_name, destination_path)
+            for file_name in file_list
+        )
 
 if __name__ == "__main__":
-    # python3 plot_base_content.py <FASTQ_file>
+    # Single File : python3 plot_base_content.py <FASTQ_file> <Plot Destination Folder>
+    # Batch Processing : python3 plot_base_content.py <Source_Folder> <Plot Destination Folder>
     main(sys.argv)

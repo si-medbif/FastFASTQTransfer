@@ -35,12 +35,14 @@ def convert_score_to_heatmap_representation (window_stat) :
 
     return pd.DataFrame(result_dict)
 
-def plot_heatmap (data, file_name) :
+def plot_heatmap (data, file_name, destination_path) :
     heatmap = sns.heatmap(data).set_title("Sliding Windows of Base (" + file_name + ")")
     heatmap.figure.set_size_inches(10, 7)
-    heatmap.figure.savefig(file_name.split('.')[0] + '_sliding_windows_qscore.png', dpi=300)
+    heatmap.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_sliding_windows_qscore.png', dpi=300)
 
-def process_single_file (source_path) :
+    plt.close()
+
+def process_single_file (source_path, destination_path) :
     source_file = open(source_path, 'r')
     window_stat = init_window_stat()
 
@@ -55,10 +57,26 @@ def process_single_file (source_path) :
 
     source_file.close()
     
-    plot_heatmap(convert_score_to_heatmap_representation(window_stat), source_path.split('/')[-1])
+    plot_heatmap(convert_score_to_heatmap_representation(window_stat), source_path.split('/')[-1], destination_path)
 
 def main (args) :
-    process_single_file(args[1])
+    source_path = args[1]
+    
+    if len(args) > 2 :
+        destination_path = args[2]
+    else :
+        destination_path = ''
+
+    file_list = glob.glob(source_path + '/*.fastq')
+    
+    if type(file_list) == bool or len(file_list) == 0 :
+        process_single_file(source_path, destination_path)
+    else :
+        print(len(file_list), 'Sample(s) to process.')
+        Parallel(n_jobs=-1, prefer="processes", verbose=10)(
+            delayed(process_single_file)(file_name, destination_path)
+            for file_name in file_list
+        )
 
 if __name__ == "__main__":
     # python3 silding_window_q_score.py <FASTQ_file>

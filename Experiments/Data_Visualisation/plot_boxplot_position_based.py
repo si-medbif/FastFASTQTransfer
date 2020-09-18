@@ -21,6 +21,7 @@ def plot_boxplot (data, file_name, destination_path) :
     boxplot = sns.boxplot(data = pd.DataFrame(data), x='Position within Read', y='Quality Score').set_title("Quality Score Across All Bases (" + file_name + ")")
     boxplot.figure.set_size_inches(25, 9)
     boxplot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_score_boxplot.png', dpi=300)
+    plt.close()
 
 def process_single_file (input_path, destination_path) :
     print('Plotting', input_path.split('/')[-1])
@@ -51,16 +52,19 @@ def main(args) :
     else :
         destination_path = ''
 
-    file_list = glob.glob(source_path + '/*')
+    file_list = glob.glob(source_path + '/*.fastq')
+    
 
     if type(file_list) == bool or len(file_list) == 0 :
         process_single_file(source_path, destination_path)
     else :
+        print(len(file_list), 'Sample(s) to process.')
         Parallel(n_jobs=1, prefer="processes", verbose=10)(
             delayed(process_single_file)(file_name, destination_path)
             for file_name in file_list
         )
 
 if __name__ == "__main__":
-    # RUN : python3 plot_boxplot_position_based.py <source_path> <destination_path>
+    # Single File : python3 plot_boxplot_position_based.py <FASTQ_file> <Plot Destination Folder>
+    # Batch Processing : python3 plot_boxplot_position_based.py <Source_Folder> <Plot Destination Folder>
     main(sys.argv)

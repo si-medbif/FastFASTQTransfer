@@ -35,12 +35,13 @@ def convert_score_to_chart_barchart_representation (score_line) :
     
     return pd.DataFrame(result_dict)
 
-def plot_bar_chart (data, file_name) :
+def plot_bar_chart (data, file_name, destination_path) :
     fig = plt.figure(figsize=(27,10), dpi=300)
     dist_plot = sns.barplot(data=data, x='Position', y='Average Score').set_title("Average Score in Position (" + file_name + ")")
-    dist_plot.figure.savefig(file_name.split('.')[0] + '_pos_avg.png')
+    dist_plot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_pos_avg.png')
+    plt.close()
 
-def process_single_file (source_file) :
+def process_single_file (source_file, destination_path) :
     score_line = list()
     no_of_record = 0
 
@@ -63,16 +64,29 @@ def process_single_file (source_file) :
     input_file.close()
 
     score_line = avg_score_line(score_line, no_of_record)
-    plot_bar_chart(convert_score_to_chart_barchart_representation(score_line), source_file.split('/')[-1])
+    plot_bar_chart(convert_score_to_chart_barchart_representation(score_line), source_file.split('/')[-1], destination_path)
+
+    return score_line
 
 def main (args) :
-    source_folder = args[1]
-    process_single_file(source_folder)
-    Parallel(n_jobs=-1, prefer="processes", verbose=10)(
-        delayed(process_single_file)(file_name)
-        for file_name in glob.glob(source_folder + '/*.fastq')
-    )
+    if len(args) > 1 :
+        destination_path = args[-1]
+    else :
+        destination_path = ''
+    
+    file_list = glob.glob(args[1] + '/*.fastq')
+
+    print(len(file_list), 'Sample(s) to process.')
+    
+    if type(file_list) == bool or len(file_list) == 0 :
+        process_single_file(args[1], destination_path)
+    else:
+        Parallel(n_jobs=-1, prefer="processes", verbose=10)(
+            delayed(process_single_file)(file_name, destination_path)
+            for file_name in file_list
+        )
 
 if __name__ == "__main__":
-    # python3 plot_avg_score_position.py <FASTQ_file>
+    # Single File : python3 plot_avg_score_position.py <FASTQ_file> <Plot Destination Folder>
+    # Batch Processing : python3 plot_avg_score_position.py <Source_Folder> <Plot Destination Folder>
     main(sys.argv)
