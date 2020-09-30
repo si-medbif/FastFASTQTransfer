@@ -18,7 +18,7 @@ def process_position_data (position_data, line) :
     return position_data
 
 def plot_boxplot (data, file_name, destination_path) :
-    boxplot = sns.boxplot(data = pd.DataFrame(data), x='Position within Read', y='Quality Score').set_title("Quality Score Across All Bases (" + file_name + ")")
+    boxplot = sns.boxplot(data = pd.DataFrame(data), x='Position within Read', y='Quality Score', showfliers=False).set_title("Quality Score Across All Bases (" + file_name + ")")
     boxplot.figure.set_size_inches(25, 9)
     boxplot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_score_boxplot.png', dpi=300)
     plt.close()
