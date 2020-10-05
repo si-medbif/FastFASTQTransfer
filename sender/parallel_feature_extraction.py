@@ -18,8 +18,6 @@ def check_file_integrity (file_path, chk_record=20) :
             line = line[:-1]
 
         current_record_length += len(line)
-        previous_line = line
-
         if previous_line == "+" :
             record_length.append(current_record_length)
             current_record_length = 0
@@ -27,6 +25,8 @@ def check_file_integrity (file_path, chk_record=20) :
         # No of record is sufficient
         if len(record_length) == chk_record :
             break  
+
+        previous_line = line
     
     # If all of the record has the same length > mean length must be equals to all record
     if statistics.mean(record_length) == record_length[0] :
@@ -34,19 +34,24 @@ def check_file_integrity (file_path, chk_record=20) :
         exit()
 
     input_file.close()
-    return record_length[0]
+    # +4 for new line character
+    return record_length[0] + 4
 
-def is_eof (file_path, line_number) :
+def is_eof_by_line (file_path, line_number) :
     input_file = open(file_path, 'r')
 
     # Get Line Size
     input_file.readline()
     line_size = input_file.tell()
+    input_file.close()
 
-    # Go To Targetted Line
-    input_file.seek(line_size * line_number)
+    return is_eof(file_path, line_size * line_number)
+
+def is_eof (file_path, cursor_position) :
+    input_file = open(file_path, 'r')
+
+    input_file.seek(cursor_position)
     line = input_file.readline()
-
     input_file.close()
 
     return line == ''
@@ -108,8 +113,7 @@ def create_jobs (file_path, chunk_size= 1000000):
     jobs = []
     current_line = 0
 
-    while is_eof(file_path, current_line) != True :
-    # while current_line < 1896000000 :
+    while is_eof_by_line(file_path, current_line) != True :
         jobs.append((current_line +1, current_line+chunk_size))
         print('Job Created : ', current_line +1, current_line+chunk_size)
         current_line += chunk_size
@@ -117,6 +121,33 @@ def create_jobs (file_path, chunk_size= 1000000):
     print(len(jobs), ' jobs has been created.')
     return jobs
 
+def create_fastq_jobs (file_path, chunk_size=1000000) :
+    # Create Jobs for parallel processing chunk_size(FASTQ Records)
+    jobs = []
+
+    record_size = check_file_integrity(file_path)
+    current_cursor = 0
+
+    while is_eof(file_path, current_cursor) != True :
+        jobs.append((current_cursor, current_cursor + (record_size*chunk_size)))
+        print('Job Created : ', current_cursor +1, current_cursor+chunk_size)
+        current_cursor += (record_size * chunk_size)
+
+    print(len(jobs), ' jobs has been created.')
+    return jobs
+
+def create_chunk_fastq_feature_file (file_path, job_position) :
+    # Open input file and move cursor to the source
+    input_file = open(file_path, 'r')
+    input_file.seek(job_position[0])
+
+    record_size = check_file_integrity(file_path)
+
+    while input_file.tell() <= job_position[1] :
+        # fq_record list contains 4 Elements -> Header, Sequence, Seperator, Quality Score
+        fq_record = input_file.read(record_size).split('\n')
+    input_file.close()
+    
 def create_chunk_feature_file (read_file_path, qscore_file_path, feature_file_path, start_line, end_line) :
     # Get Data
     
@@ -150,6 +181,9 @@ def parallel_extract_feature (read_file_path, qscore_file_path, feature_file_pat
     feature_file = open(feature_file_path, 'w')
     feature_file.flush()
     feature_file.close()
+
+    # Convert Chunk Size to Int
+    chunk_size = int(chunk_size)
 
     Parallel(n_jobs=-1, prefer="processes", verbose=11)(
             delayed(create_chunk_feature_file)(read_file_path, qscore_file_path, feature_file_path, start_line, end_line)
