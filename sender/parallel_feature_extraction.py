@@ -1,8 +1,15 @@
 from joblib import Parallel, delayed
 import statistics
 import sys
+import os
 
 # Extracting Feature into Feature File
+
+def extract_read_to_file (fastq_path, read_file_path) :
+    os.system("awk '0 == (NR + 2) % 4' " + fastq_path + " > " + read_file_path)    
+
+def extract_quality_score_to_file (fastq_path, quality_file_path) :
+    os.system("awk '0 == (NR + 2) % 4' " + fastq_path + " > " + quality_file_path)
 
 def check_file_integrity (file_path, chk_record=20) :
     input_file = open(file_path, 'r')
