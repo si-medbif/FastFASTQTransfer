@@ -44,6 +44,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse'])    
 
-    model.fit_generator(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=data_batch_generator, validation_steps=step_per_epoch)
+    training_hist = model.fit_generator(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=data_batch_generator, validation_steps=step_per_epoch)
 
-    return model
+    return model, training_hist
