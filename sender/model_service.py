@@ -2,39 +2,48 @@ import pandas as pd
 import numpy as np
 
 from keras.models import Sequential 
+from keras.utils import np_utils
 
-# Buold and Fit the model
+# Build and Fit the model
 
-def load_data_as_batch (data_path, index, batch_size) :
+def preprocess_score_to_prob (input_y) :
+    # Quality Score Has 0-42 (43 Categorical Class Possible)
+    return np_utils.to_categorical(input_y, 43)
+
+def load_data_as_batch (data_path, index, batch_size, model_position=None) :
     dataset = pd.read_csv(data_path, skiprows=index*batch_size, nrows=batch_size)
 
-    no_of_feature = len(dataset.columns) / 2
+    no_of_feature = int(len(dataset.columns) / 2)
 
     # Seperate X and Y by Half
     x = dataset.iloc[:, :no_of_feature]
-    y = dataset.iloc[:, no_of_feature+1:]
+
+    if model_position != None :
+        # The Score Position is Selected -> Grab only prefered position and transform
+        y = preprocess_score_to_prob(dataset.iloc[:, no_of_feature + model_position-1])
+    else :
+        y = dataset.iloc[:, no_of_feature:]
 
     return (np.array(x), np.array(y))
 
-def batch_generator (data_path, batch_size, steps) :
+def batch_generator (data_path, batch_size, steps, model_position=None) :
     index = 1
     while True :
-        yield load_data_as_batch(data_path, index-1, batch_size)
+        yield load_data_as_batch(data_path, index-1, batch_size, model_position=model_position)
         if index < steps :
             index += 1
         else :
             index = 1
 
-def train_sequencial_model (layers, X, Y, val_X, val_Y, epoch=100, optimiser="sgd", loss="categorical_crossentropy") :
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None) :
+    data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
+
     model = Sequential()
     for layer in layers :
         model.add(layer)
 
-    model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
+    model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse'])    
 
-    # model.fit_generator(data_batch_generator, epochs=no_of_epoch, steps_per_epoch=steps_per_epoch, validation_data=data_batch_generator, validation_steps=steps_per_epoch, use_multiprocessing=True)
-    # data_batch_generator = batch_generator(feature_file_path, 256, steps_per_epoch)
-
-    model.fit(X,Y, epoch=epoch, validation_data=(X,Y))
+    model.fit_generator(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=data_batch_generator, validation_steps=step_per_epoch)
 
     return model
