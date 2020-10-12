@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from keras.models import Sequential, load_model
+from tensorflow.keras.models import Sequential, load_model
 from sklearn.preprocessing import OneHotEncoder
-from keras.layers import Dense, Embedding, LSTM
-from keras import optimizers
+from tensorflow.keras.layers import Dense, Embedding, LSTM
+from tensorflow.keras import optimizers
 
 # UTILITIES FUNCTION STARTS HERE!
 
