@@ -3,7 +3,7 @@ import statistics
 import sys
 import os
 
-# Extracting Feature into Feature File
+# Parallelly Extracting Feature into Feature File
 
 def extract_read_to_file (fastq_path, read_file_path) :
     os.system("awk '0 == (NR + 2) % 4' " + fastq_path + " > " + read_file_path)    

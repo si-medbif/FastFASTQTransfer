@@ -2,7 +2,7 @@ import sys
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense
-from sender.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
+from Experiment.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
 from sender.model_service import train_sequencial_model
 
 def parse_arguments (args) :
