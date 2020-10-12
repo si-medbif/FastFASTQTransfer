@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
 
-from keras.models import Sequential 
-from keras.utils import np_utils
+from tensorflow.keras.models import Sequential 
+from tensorflow.keras.utils import to_categorical
 
 # Build and Fit the model
 
 def preprocess_score_to_prob (input_y) :
     # Quality Score Has 0-42 (43 Categorical Class Possible)
-    return np_utils.to_categorical(input_y, 43)
+    return to_categorical(input_y, 43)
 
 def load_data_as_batch (data_path, index, batch_size, model_position=None) :
     dataset = pd.read_csv(data_path, skiprows=index*batch_size, nrows=batch_size)
