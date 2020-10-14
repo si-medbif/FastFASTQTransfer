@@ -2,12 +2,8 @@ import sys
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense
-from Experiment.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
+from Experiments.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
 from sender.model_service import train_sequencial_model
-
-def parse_arguments (args) :
-    # python3 test_large_dataset.py <Read File> <Quality Score File> <Feature File Path> <Chunk Size>
-    return args[1], args[2], args[3], args[4]
 
 def evaluate_model (training_history, experiment_name) : 
 
@@ -48,8 +44,8 @@ def evaluate_model (training_history, experiment_name) :
     plt.close()
 
 def main (args) :    
-    
-    read_file_path, qscore_file_path, feature_file_path, chunk_size = parse_arguments(args)
+    # Input Parameter
+    read_file_path, qscore_file_path, feature_file_path, chunk_size = args[1], args[2], args[3], args[4]
     
     # Producing Feature File From Read and Quality Score File
     parallel_extract_feature (read_file_path, qscore_file_path, feature_file_path, chunk_size) 
@@ -73,4 +69,5 @@ def main (args) :
     evaluate_model(training_hist, '3_Layers_Softmax')
 
 if __name__ == "__main__":
+    # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path> <Chunk Size>
     main(sys.argv)
