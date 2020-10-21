@@ -1,7 +1,5 @@
-import math
 import pandas as pd
 import numpy as np
-import dask.dataframe as dd
 
 from tensorflow.keras.models import Sequential 
 from tensorflow.keras.utils import to_categorical
@@ -14,31 +12,57 @@ def preprocess_score_to_prob (input_y) :
 
 def batch_generator (data_path, batch_size, steps, model_position=None) :
     index = 1
-    dataset = dd.read_csv(data_path, header=None)
-    no_of_feature = math.floor(len(dataset.columns) / 2)
-
     while True :
-        # Seperate X and Y
-        x = dataset.loc[index].iloc[:,:no_of_feature].compute()
+        data_chunk = pd.read_csv(data_path, skiprows=index*batch_size, nrows=batch_size)
 
-        if model_position is not None :
-            y = preprocess_score_to_prob(dataset.loc[index].iloc[:, no_of_feature + model_position - 1].compute())
+        # Seperate X and Y by Half
+        no_of_feature = int(len(data_chunk.columns) / 2)
+        x = data_chunk.iloc[:, :no_of_feature]
+
+        # Encode Value
+        transform_dict = {'A': 1, 'T': 2, 'C' : 3, 'G': 4, 'N': 0}
+        new_x = [transform_dict.get(n,n) for n in x]
+
+        if model_position != None :
+            # The Score Position is Selected -> Grab only prefered position and transform
+            y = preprocess_score_to_prob(data_chunk.iloc[:, 100 + model_position-1])
         else :
-            y = dataset.loc[index].iloc[:, no_of_feature:].compute()
-        
-        yield np.array(x), np.array(y)
-        
+            y - data_chunk.iloc[:, no_of_feature + model_position - 1]
+
+        yield np.array(x, dtype='int8'), np.array(y, dtype='int8')
+
         if index < steps :
             index += 1
         else :
             index = 1
 
-def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, batch_size=10000, model_position=None) :
-    data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
+def single_record_generator (data_path, model_position=1): 
+    input_file = open(data_path, 'r')
+
+    while True :
+        feature_components = input_file.readline()[:-1].split(',')
+
+        feature_size = len(feature_components)
+        x = feature_components[:int(feature_size/2)]
+        x = [int (i) for i in x]
+
+        # Encode Value
+        # transform_dict = {'A': 1, 'T': 2, 'C' : 3, 'G': 4, 'N': 0}
+        # new_x = [int(transform_dict.get(n,n)) for n in x]
+        y = [0] * 43
+        y[int(feature_components[int(feature_size/2)+ model_position-1])] = 1
+
+        yield np.array([x]), np.array([y])
+
+    input_file.close()
+
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None) :
+    # data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
+    data_batch_generator = single_record_generator(feature_file,1)
 
     model = Sequential(layers)
 
-    model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse'])    
+    model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
     training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=data_batch_generator, validation_steps=step_per_epoch)
 
