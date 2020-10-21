@@ -12,7 +12,7 @@ def evaluate_model (training_history, experiment_name) :
     model_hist_file.write('loss,val_loss,acc,val_acc\n')
     
     for i in range(0,len(training_history.history['loss'])) :
-        model_hist_file.write(str(training_history.history['loss'][i]) + ',' + str(training_history.history['val_loss'][i]) + ',' + str(training_history.history['acc'][i]) + ',' + str(training_history.history['val_acc'][i]) + '\n')
+        model_hist_file.write(str(training_history.history['loss'][i]) + ',' + str(training_history.history['val_loss'][i]) + ',' + str(training_history.history['accuracy'][i]) + ',' + str(training_history.history['val_accuracy'][i]) + '\n')
 
     model_hist_file.close()
 
@@ -25,20 +25,20 @@ def evaluate_model (training_history, experiment_name) :
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper right')
-    plt.savefig('model_experiment/charts/loss/' + experiment_name + '.png')
+    plt.savefig('Results/model_experiment/charts/loss/' + experiment_name + '.png')
     plt.clf()
     plt.cla()
     plt.close()
 
     # Accuracy Plot
-    plt.plot(training_history.history['acc'])
-    plt.plot(training_history.history['val_acc'])
+    plt.plot(training_history.history['accuracy'])
+    plt.plot(training_history.history['val_accuracy'])
     plt.plot
     plt.title('Model Accuracy')
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper right')
-    plt.savefig('model_experiment/charts/accuracy/' + experiment_name + '.png')
+    plt.savefig('Results/model_experiment/charts/accuracy/' + experiment_name + '.png')
     plt.clf()
     plt.cla()
     plt.close()
