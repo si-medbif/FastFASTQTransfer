@@ -45,29 +45,35 @@ def evaluate_model (training_history, experiment_name) :
 
 def main (args) :    
     # Input Parameter
-    read_file_path, qscore_file_path, feature_file_path, chunk_size = args[1], args[2], args[3], args[4]
+    read_file_path, qscore_file_path, feature_file_path = args[1], args[2], args[3]
     
     # Producing Feature File From Read and Quality Score File
-    parallel_extract_feature (read_file_path, qscore_file_path, feature_file_path, chunk_size) 
+    # parallel_extract_feature (read_file_path, qscore_file_path, feature_file_path) 
     
     # Training Configurations
     input_dim = 90
     output_dim = 43
-    no_of_epoch = 1
-    steps_per_epoch = 20000
+    no_of_epoch = 10
+    steps_per_epoch = 200000
+
+    # Experiment Detail
+    experiment_name = "3_Layers_Softmax"
 
     # Layer Container
     model_layers = []
 
     # Layer Specification
-    model_layers.append(Dense(input_dim, activation='relu'))
-    model_layers.append(Dense(200, activation='relu'))
+    model_layers.append(Dense(input_dim, activation='softmax'))
+    model_layers.append(Dense(200, activation='softmax'))
     model_layers.append(Dense(output_dim, activation='softmax'))
 
     # Train and Evaluate Model
     model, training_hist = train_sequencial_model(model_layers, feature_file_path, epoch=no_of_epoch, step_per_epoch=steps_per_epoch, model_position=1)    
-    evaluate_model(training_hist, '3_Layers_Softmax')
+    evaluate_model(training_hist, experiment_name)
+    
+    # Save trained model to file
+    model.save('Results/model_experiment/model/' + experiment_name + '.h5')
 
 if __name__ == "__main__":
-    # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path> <Chunk Size>
+    # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path>
     main(sys.argv)
