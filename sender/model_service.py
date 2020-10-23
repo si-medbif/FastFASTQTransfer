@@ -49,8 +49,7 @@ def single_record_generator (data_path, model_position=1):
         # Encode Value
         # transform_dict = {'A': 1, 'T': 2, 'C' : 3, 'G': 4, 'N': 0}
         # new_x = [int(transform_dict.get(n,n)) for n in x]
-        y = [0] * 43
-        y[int(feature_components[int(feature_size/2)+ model_position-1])] = 1
+        y = to_categorical(feature_components[int(feature_size/2)+ model_position-1], 43)
 
         yield np.array([x]), np.array([y])
 
