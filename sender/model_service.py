@@ -58,11 +58,12 @@ def single_record_generator (data_path, model_position=1):
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None) :
     # data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
     data_batch_generator = single_record_generator(feature_file,1)
+    validation_batch_generator = single_record_generator(feature_file,1)
 
     model = Sequential(layers)
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=data_batch_generator, validation_steps=step_per_epoch)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
 
     return model, training_hist
