@@ -110,55 +110,148 @@ def main (args) :
 
     # # END OF EXPERIMENT 3
 
-    # EXPERIMENT 4 STARTS HERE
+    # # EXPERIMENT 4 STARTS HERE
+
+    # # Layer Container
+    # model_layers = []
+
+    # # Layer Specification
+    # model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
+    # model_layers.append(Dense(300, activation='softmax'))
+    # model_layers.append(Dense(200, activation='softmax'))
+    # model_layers.append(Dense(100, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_4')
+
+    # # END OF EXPERIMENT 4
+
+    # # EXPERIMENT 5 STARTS HERE
+
+    # # Layer Container
+    # model_layers = []
+
+    # # Layer Specification
+    # model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_5')
+
+    # # END OF EXPERIMENT 5
+
+    # # EXPERIMENT 6 STARTS HERE
+
+    # # Layer Container
+    # model_layers = []
+
+    # # Layer Specification
+    # model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='4_Layers_Softmax_200L2_100L3')
+
+    # # END OF EXPERIMENT 6
+
+    # EXPERIMENT 7 STARTS HERE
 
     # Layer Container
     model_layers = []
 
     # Layer Specification
-    model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
-    model_layers.append(Dense(300, activation='softmax'))
-    model_layers.append(Dense(200, activation='softmax'))
-    model_layers.append(Dense(100, activation='softmax'))
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(50, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_4')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='3_Layers_Softmax_50L2')
 
-    # END OF EXPERIMENT 4
+    # END OF EXPERIMENT 7
 
-    # EXPERIMENT 5 STARTS HERE
+    # EXPERIMENT 8 STARTS HERE
 
     # Layer Container
     model_layers = []
 
     # Layer Specification
-    model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_5')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='3_Layers_Softmax_500L2')
 
-    # END OF EXPERIMENT 5
+    # END OF EXPERIMENT 8
 
-    # EXPERIMENT 6 STARTS HERE
+    # EXPERIMENT 9 STARTS HERE
 
     # Layer Container
     model_layers = []
 
     # Layer Specification
-    model_layers.append(Dense(model_configuration['input_dim'], activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(200, activation='relu'))
+    model_layers.append(Dense(100, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
     model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='4_Layers_Softmax_200L2_100L3')
 
-    # END OF EXPERIMENT 6
+    # END OF EXPERIMENT 9
+
+    # EXPERIMENT 10 STARTS HERE
+
+    # Layer Container
+    model_layers = []
+
+    # Layer Specification
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(300, activation='relu'))
+    model_layers.append(Dense(200, activation='relu'))
+    model_layers.append(Dense(100, activation='relu'))
+    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_4')
+
+    # END OF EXPERIMENT 10
+
+    # EXPERIMENT 11 STARTS HERE
+
+    # Layer Container
+    model_layers = []
+
+    # Layer Specification
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_5')
+
+    # END OF EXPERIMENT 11
+
+    # EXPERIMENT 12 STARTS HERE
+
+    # Layer Container
+    model_layers = []
+
+    # Layer Specification
+    model_layers.append(Dense(model_configuration['input_dim'], activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(500, activation='relu'))
+    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='4_Layers_Softmax_200L2_100L3')
+
+    # END OF EXPERIMENT 12
 
 if __name__ == "__main__":
     # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path>
