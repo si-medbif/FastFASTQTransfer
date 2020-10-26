@@ -170,7 +170,7 @@ def main (args) :
     model_layers.append(Dense(50, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='3_Layers_Softmax_50L2')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_7')
 
     # END OF EXPERIMENT 7
 
@@ -184,7 +184,7 @@ def main (args) :
     model_layers.append(Dense(500, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='3_Layers_Softmax_500L2')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_8')
 
     # END OF EXPERIMENT 8
 
@@ -199,7 +199,7 @@ def main (args) :
     model_layers.append(Dense(100, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='4_Layers_Softmax_200L2_100L3')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_9')
 
     # END OF EXPERIMENT 9
 
@@ -215,7 +215,7 @@ def main (args) :
     model_layers.append(Dense(100, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_4')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_10')
 
     # END OF EXPERIMENT 10
 
@@ -231,7 +231,7 @@ def main (args) :
     model_layers.append(Dense(500, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_5')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_11')
 
     # END OF EXPERIMENT 11
 
@@ -249,7 +249,7 @@ def main (args) :
     model_layers.append(Dense(500, activation='relu'))
     model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='4_Layers_Softmax_200L2_100L3')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, experiment_name='Model_12')
 
     # END OF EXPERIMENT 12
 
