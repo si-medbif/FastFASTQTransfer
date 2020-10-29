@@ -55,10 +55,35 @@ def single_record_generator (data_path, model_position=1):
 
     input_file.close()
 
-def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None) :
+def lstm_record_generator (data_path, model_position=1) :
+    input_file = open(data_path, 'r')
+
+    while True :
+        feature_components = input_file.readline()[:-1].split(',')
+
+        feature_size = len(feature_components)
+        x = feature_components[:int(feature_size/2)]
+        x = [[int(i) for i in x]]
+
+        new_X = np.array([np.array(x)], dtype=float)
+
+        y = to_categorical(feature_components[int(feature_size/2) + model_position-1], 43)
+
+        yield new_X, np.array([y])
+    
+    input_file.close()
+
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False) :
     # data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
-    data_batch_generator = single_record_generator(feature_file,1)
-    validation_batch_generator = single_record_generator(feature_file,1)
+
+    if is_lstm :
+        print('Load the data by LSTM')
+        data_batch_generator = lstm_record_generator(feature_file,1)
+        validation_batch_generator = lstm_record_generator(feature_file,1)
+    else:
+        print('Load normal set of data')
+        data_batch_generator = single_record_generator(feature_file,1)
+        validation_batch_generator = single_record_generator(feature_file,1)
 
     model = Sequential(layers)
 
