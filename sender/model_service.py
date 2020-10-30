@@ -84,7 +84,7 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
         feature_components = input_file.readline()[:-1].split(',')
 
         feature_size = len(feature_components)
-        x = np.array(feature_components(: int(feature_size/2)), dtype=float)
+        x = np.array(feature_components[:int(feature_size/2)], dtype=float)
 
         y = to_categorical(feature_components[int(feature_size/2) + model_position - 1], 43)
 
