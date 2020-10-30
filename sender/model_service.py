@@ -73,17 +73,49 @@ def lstm_record_generator (data_path, model_position=1) :
     
     input_file.close()
 
-def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False) :
+def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
+    input_file = open(data_path, 'r')
+
+    batch_counter = 0
+    X_container = []
+    Y_container = []
+
+    while True :
+        feature_components = input_file.readline()[:-1].split(',')
+
+        feature_size = len(feature_components)
+        x = np.array(feature_components(: int(feature_size/2)), dtype=float)
+
+        y = to_categorical(feature_components[int(feature_size/2) + model_position - 1], 43)
+
+        X_container.append(x)
+        Y_container.append(y)
+
+        batch_counter += 1
+
+        if batch_counter == batch_size :
+            yield np.array(X_container), np.array(Y_container)
+            X_container = []
+            Y_container = []
+            batch_counter = 0
+
+    input_file.close()
+
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None) :
     # data_batch_generator = batch_generator(feature_file, 256, step_per_epoch, model_position=model_position)
 
-    if is_lstm :
-        print('Load the data by LSTM')
-        data_batch_generator = lstm_record_generator(feature_file,1)
-        validation_batch_generator = lstm_record_generator(feature_file,1)
-    else:
-        print('Load normal set of data')
-        data_batch_generator = single_record_generator(feature_file,1)
-        validation_batch_generator = single_record_generator(feature_file,1)
+    if generator is not None :
+        data_batch_generator = generator
+        validation_batch_generator = generator
+    else :
+        if is_lstm :
+            print('Load the data by LSTM')
+            data_batch_generator = lstm_record_generator(feature_file,1)
+            validation_batch_generator = lstm_record_generator(feature_file,1)
+        else:
+            print('Load normal set of data')
+            data_batch_generator = single_record_generator(feature_file,1)
+            validation_batch_generator = single_record_generator(feature_file,1)
 
     model = Sequential(layers)
 
