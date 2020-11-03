@@ -68,9 +68,13 @@ def lstm_record_generator (data_path, model_position=1) :
 
         new_X = np.array([np.array(x)], dtype=float)
 
-        y = to_categorical(feature_components[int(feature_size/2) + model_position-1], 43)
-
-        yield new_X, np.array([y])
+        if model_position != None :
+            y = to_categorical(feature_components[int(feature_size/2) + model_position-1], 43)
+            yield new_X, np.array([y])
+        else :
+            y = feature_components[int(feature_size/2):]
+            y = [int(i) for i in y]
+            yield new_X, np.array([y])
     
     input_file.close()
 
@@ -108,11 +112,11 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
         validation_batch_generator = generator
     else :
         if is_lstm :
-            data_batch_generator = lstm_record_generator(feature_file,1)
-            validation_batch_generator = lstm_record_generator(feature_file,1)
+            data_batch_generator = lstm_record_generator(feature_file, model_position=model_position)
+            validation_batch_generator = lstm_record_generator(feature_file, model_position=model_position)
         else:
-            data_batch_generator = single_record_generator(feature_file,1)
-            validation_batch_generator = single_record_generator(feature_file,1)
+            data_batch_generator = single_record_generator(feature_file, model_position=model_position)
+            validation_batch_generator = single_record_generator(feature_file, model_position=model_position)
 
     model = Sequential(layers)
 
