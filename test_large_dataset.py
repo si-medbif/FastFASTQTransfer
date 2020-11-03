@@ -43,10 +43,12 @@ def evaluate_model (training_history, experiment_name) :
     plt.cla()
     plt.close()
 
-def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False) :
+def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False, model_position=1 ,loss='categorical_crossentropy') :
+
+    print(experiment_name)
 
     # Train and Evaluate Model
-    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=1, is_lstm=is_lstm)    
+    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss)    
     evaluate_model(training_hist, experiment_name)
     
     # Save trained model to file
@@ -328,110 +330,262 @@ def main (args) :
 
     # # END OF EXPERIMENT 17
 
-    # EXPERIMENT 18 STARTS HERE (From Ex.15 Add Ex.1)
+    # # EXPERIMENT 18 STARTS HERE (From Ex.15 Add Ex.1)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(50, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(50, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_18')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_18')
 
-    # END OF EXPERIMENT 18
+    # # END OF EXPERIMENT 18
 
-    # EXPERIMENT 19 STARTS HERE (From Ex.15 Add Ex.2)
+    # # EXPERIMENT 19 STARTS HERE (From Ex.15 Add Ex.2)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_19')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_19')
 
-    # END OF EXPERIMENT 19
+    # # END OF EXPERIMENT 19
 
-    # EXPERIMENT 20 STARTS HERE (From Ex.15 Add Ex.3)
+    # # EXPERIMENT 20 STARTS HERE (From Ex.15 Add Ex.3)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(200, activation='softmax'))
-    model_layers.append(Dense(100, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(200, activation='softmax'))
+    # model_layers.append(Dense(100, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_20')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_20')
 
-    # END OF EXPERIMENT 20
+    # # END OF EXPERIMENT 20
 
-    # EXPERIMENT 21 STARTS HERE (From Ex.15 Add Ex.4)
+    # # EXPERIMENT 21 STARTS HERE (From Ex.15 Add Ex.4)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(300, activation='softmax'))
-    model_layers.append(Dense(200, activation='softmax'))
-    model_layers.append(Dense(100, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(300, activation='softmax'))
+    # model_layers.append(Dense(200, activation='softmax'))
+    # model_layers.append(Dense(100, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_21')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_21')
 
-    # END OF EXPERIMENT 21
+    # # END OF EXPERIMENT 21
 
-    # EXPERIMENT 22 STARTS HERE (From Ex.15 Add Ex.5)
+    # # EXPERIMENT 22 STARTS HERE (From Ex.15 Add Ex.5)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_22')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_22')
 
-    # END OF EXPERIMENT 22
+    # # END OF EXPERIMENT 22
 
-    # EXPERIMENT 23 STARTS HERE (From Ex.15 Add Ex.6)
+    # # EXPERIMENT 23 STARTS HERE (From Ex.15 Add Ex.6)
 
-    # Layer Container
-    model_layers = []
+    # # Layer Container
+    # model_layers = []
 
-    # Layer Specification
-    model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
-    model_layers.append(LSTM(90, return_sequences=True))
-    model_layers.append(LSTM(90))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(500, activation='softmax'))
-    model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
+    # # Layer Specification
+    # model_layers.append(LSTM(model_configuration['input_dim'], return_sequences=True))
+    # model_layers.append(LSTM(90, return_sequences=True))
+    # model_layers.append(LSTM(90))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(500, activation='softmax'))
+    # model_layers.append(Dense(model_configuration['output_dim'], activation='softmax'))
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_23')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration=model_layers, is_lstm=True, experiment_name='Model_23')
 
-    # END OF EXPERIMENT 23
+    # # END OF EXPERIMENT 23
+
+    # # EXPERIMENT 24 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 43,
+    #     'no_of_epoch' : 100,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim'], return_sequences=True),
+    #     LSTM(90, return_sequences=True),
+    #     LSTM(90),
+    #     Dense(500, activation='softmax'),
+    #     Dense(500, activation='softmax'),
+    #     Dense(500, activation='softmax'),
+    #     Dense(500, activation='softmax'),
+    #     Dense(500, activation='softmax'),
+    #     Dense(model_configuration['output_dim'], activation='softmax')
+
+    # ], is_lstm=True, experiment_name='Model_24')
+
+    # # END OF EXPERIMENT 24
+
+    # # EXPERIMENT 25 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     Dense(model_configuration['input_dim'], activation='relu'),
+    #     Dense(50, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_25')
+
+    # # END OF EXPERIMENT 25
+
+    # # EXPERIMENT 26 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     Dense(model_configuration['input_dim'], activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_26')
+
+    # # END OF EXPERIMENT 26
+
+    # # EXPERIMENT 27 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(200, activation='relu'),
+    #     Dense(100, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_27')
+
+    # # END OF EXPERIMENT 27
+
+    # # EXPERIMENT 28 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(300, activation='relu'),
+    #     Dense(200, activation='relu'),
+    #     Dense(100, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_28')
+
+    # # END OF EXPERIMENT 28
+
+    # # EXPERIMENT 29 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_29')
+
+    # # END OF EXPERIMENT 29
+
+    # # EXPERIMENT 30 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 90,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': 20000
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_30')
+
+    # # END OF EXPERIMENT 30
+
+    # EXPERIMENT 31 STARTS HERE
+    model_configuration = {
+        'input_dim' : 90,
+        'output_dim' : 43,
+        'no_of_epoch' : 100,
+        'steps_per_epoch': 753677
+    }
+
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+        LSTM(model_configuration['input_dim']),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(model_configuration['output_dim'], activation='relu')
+
+    ], is_lstm=True, experiment_name='Model_31')
+
+    # END OF EXPERIMENT 31
 
 if __name__ == "__main__":
     # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path>
