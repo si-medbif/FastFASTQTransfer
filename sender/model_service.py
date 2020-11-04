@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 import numpy as np
 
@@ -84,22 +85,41 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
     batch_counter = 0
     X_container = []
     Y_container = []
+    index_counter = 0
 
     while True :
-        feature_components = input_file.readline()[:-1].split(',')
+        index_counter += 1
+        line = input_file.readline()[:-1]
+        feature_components = line.split(',')
 
-        feature_size = len(feature_components)
-        x = np.array(feature_components[:int(feature_size/2)], dtype=float)
+        feature_size = math.floor(len(feature_components) / 2)
 
-        y = to_categorical(feature_components[int(feature_size/2) + model_position - 1], 43)
+        if feature_size != 90 :
+            print(index_counter, 'Feature Size ', feature_size, line, '\n\n')
+        x = feature_components[:feature_size]
+
+        new_x = []
+        for x_item in x :
+            new_x.append(float(x_item))
+
+        if len(new_x) > 90 :
+            new_x = new_x[:90]
+        
+        x = np.array(new_x, dtype=np.float32)
+
+        y = to_categorical(feature_components[feature_size + model_position - 1], 43)
+        # y = [0] * 43
+        # y[int(feature_components[feature_size + model_position - 1])-1] = 1
+        # y = np.array(y, dtype=np.float32)
 
         X_container.append(x)
         Y_container.append(y)
 
         batch_counter += 1
 
-        if batch_counter == batch_size :
-            yield np.array(X_container), np.array(Y_container)
+        if len(X_container) == batch_size :
+            # print('X!!!!', np.array([X_container]).shape, np.array([X_container]))
+            yield np.array([X_container]), np.array(Y_container)
             X_container = []
             Y_container = []
             batch_counter = 0
@@ -122,6 +142,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, use_multiprocessing=True, workers=8, max_queue_size=100)
 
     return model, training_hist
