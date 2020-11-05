@@ -1,7 +1,11 @@
 import sys
 import glob
+import math
 
 # Extracting the result from pilot compression bash script
+def convert_time_to_sec (time_string) :
+    time_components = time_string.split('.')[0].split(':')
+    return str(int(time_components[0]) * 60 + int(time_components[1]))
 
 def extract_arithmetic_result (file_size_result_file_path, time_result_file_path, transform_result_path) :
     result = {}
@@ -79,6 +83,63 @@ def extract_arithmetic_result (file_size_result_file_path, time_result_file_path
 
         for i in range(0, no_of_experiment) :
             transformed_result_file.write(sample_name + ',' + str(compressed_size) + ',' + result[sample_name]['compression']['real_time'][i] + ',' + result[sample_name]['compression']['cpu_time'][i] + ',' + result[sample_name]['compression']['avg_memory_used'][i] + ',' + result[sample_name]['compression']['peak_memory_used'][i] + ',' + result[sample_name]['decompression']['real_time'][i] + ',' + result[sample_name]['decompression']['cpu_time'][i] + ',' + result[sample_name]['decompression']['avg_memory_used'][i] + ',' + result[sample_name]['decompression']['peak_memory_used'][i] + '\n')
+
+    transformed_result_file.close()
+
+def extract_huffman_result (result_path, transform_result_path) :
+    result_file = open(result_path , 'r')
+    result = {}
+    
+    line = result_file.readline()
+    while line != '' :
+        line = line[:-1]
+
+        if len(line.split(',')) != 4 :
+            sample_name = line
+            result[sample_name] = {}
+            result[sample_name]['compression'] = {
+                'real_time' : [],
+                'cpu_time' : [],
+                'avg_memory_used' : [],
+                'peak_memory_used' : []
+            }
+            result[sample_name]['decompression'] = {
+                'real_time' : [],
+                'cpu_time' : [],
+                'avg_memory_used' : [],
+                'peak_memory_used' : []
+            }
+        else :
+            compression_stat = line.split(',')
+            decompression_stat = result_file.readline()[:-1].split(',')
+            
+            time_items = compression_stat[0].split('.')[0].split(':')
+            result[sample_name]['compression']['real_time'].append(convert_time_to_sec(compression_stat[0]))
+            result[sample_name]['compression']['cpu_time'].append(compression_stat[1])
+            result[sample_name]['compression']['avg_memory_used'].append(compression_stat[2])
+            result[sample_name]['compression']['peak_memory_used'].append(compression_stat[3])
+
+            if len(decompression_stat) == 4 :
+                result[sample_name]['decompression']['real_time'].append(convert_time_to_sec(decompression_stat[0]))
+                result[sample_name]['decompression']['cpu_time'].append(decompression_stat[1])
+                result[sample_name]['decompression']['avg_memory_used'].append(decompression_stat[2])
+                result[sample_name]['decompression']['peak_memory_used'].append(decompression_stat[3])
+
+        line = result_file.readline()
+
+    result_file.close()
+
+    # Transform Result
+    transformed_result_file = open(transform_result_path, 'w')
+
+    # Write Header To File
+    transformed_result_file.write('sample_name,c_real_time,c_total_cpu_time,c_avg_mem,c_peak_mem,d_real_time,d_total_cpu_time,d_avg_mem,d_peak_mem\n')
+
+    for sample_name in result.keys() :
+        no_of_experiment = min(len(result[sample_name]['compression']['real_time']), len(result[sample_name]['decompression']['real_time']))
+
+        for i in range(0, no_of_experiment) :
+            transformed_result_file.write(sample_name + ',' + result[sample_name]['compression']['real_time'][i] + ',' + result[sample_name]['compression']['cpu_time'][i] + ',' + result[sample_name]['compression']['avg_memory_used'][i] + ',' + result[sample_name]['compression']['peak_memory_used'][i] + ',' + result[sample_name]['decompression']['real_time'][i] + ',' + result[sample_name]['decompression']['cpu_time'][i] + ',' + result[sample_name]['decompression']['avg_memory_used'][i] + ',' + result[sample_name]['decompression']['peak_memory_used'][i] + '\n')
 
     transformed_result_file.close()
 
@@ -192,6 +253,10 @@ def main ():
     # Gzip Result Extraction
     # result_file_path, transformed_result_path = sys.argv[1], sys.argv[2]
     # extract_gzip_result(result_file_path, transformed_result_path)
+
+    # Huffman Result Extraction
+    result_file_path, transformed_result_path = sys.argv[1], sys.argv[2]
+    extract_huffman_result(result_file_path, transformed_result_path)
 
 if __name__ == "__main__":
     main()
