@@ -1,6 +1,9 @@
 import sys
 import glob
 import math
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Extracting the result from pilot compression bash script
 def convert_time_to_sec (time_string) :
@@ -55,14 +58,14 @@ def extract_arithmetic_result (file_size_result_file_path, time_result_file_path
         else:
             if line_flag == 0:
                 # Elapsed Real Time, Total CPU Time, Avg Memory Used (KB), Peak Memory Used (KB)
-                result[sample_name]['compression']['real_time'].append(elements[0])
+                result[sample_name]['compression']['real_time'].append(convert_time_to_sec(elements[0]))
                 result[sample_name]['compression']['cpu_time'].append(elements[1])
                 result[sample_name]['compression']['avg_memory_used'].append(elements[2])
                 result[sample_name]['compression']['peak_memory_used'].append(elements[3])
                 
                 line_flag = 1
             else :
-                result[sample_name]['decompression']['real_time'].append(elements[0])
+                result[sample_name]['decompression']['real_time'].append(convert_time_to_sec(elements[0]))
                 result[sample_name]['decompression']['cpu_time'].append(elements[1])
                 result[sample_name]['decompression']['avg_memory_used'].append(elements[2])
                 result[sample_name]['decompression']['peak_memory_used'].append(elements[3])
@@ -186,7 +189,7 @@ def extract_gzip_result (result_path, transformed_result_path) :
             # Skip Blank Line
             if line != '\n' :
                 components = line.replace('\n', '').split(',')
-                result[sample_name]['compression']['real_time'].append(components[0])
+                result[sample_name]['compression']['real_time'].append(convert_time_to_sec(components[0]))
                 result[sample_name]['compression']['cpu_time'].append(components[1])
                 result[sample_name]['compression']['avg_memory_used'].append(components[2])
                 result[sample_name]['compression']['peak_memory_used'].append(components[3])
@@ -213,7 +216,7 @@ def extract_gzip_result (result_path, transformed_result_path) :
             # Skip Blank Line
             if line != '\n' :
                 components = line.replace('\n', '').split(',')
-                result[sample_name]['decompression']['real_time'].append(components[0])
+                result[sample_name]['decompression']['real_time'].append(convert_time_to_sec(components[0]))
                 result[sample_name]['decompression']['cpu_time'].append(components[1])
                 result[sample_name]['decompression']['avg_memory_used'].append(components[2])
                 result[sample_name]['decompression']['peak_memory_used'].append(components[3])
@@ -244,6 +247,48 @@ def extract_gzip_result (result_path, transformed_result_path) :
                 sample_result_record['decompression']['peak_memory_used'][i] + '\n'
             )    
     transformed_result_file.close()
+
+def plot_method_comparation (gzip_result_file_path, arithmetic_result_file_path, huffman_result_file_path, graph_destination_folder) :
+    
+    # Read Result Files
+    gzip_result_df = pd.read_csv(gzip_result_file_path)
+    huffman_result_df = pd.read_csv(huffman_result_file_path)
+    arithmetic_result_df = pd.read_csv(arithmetic_result_file_path)
+
+    # Add Method Field
+    gzip_result_df['method_name'] = 'Gzip'
+    huffman_result_df['method_name'] = 'Huffman'
+    arithmetic_result_df['method_name'] = 'Arithmetic'
+
+    # Construct Complete DataFrame
+    result_df = pd.DataFrame()
+    result_df = result_df.append(gzip_result_df).append(huffman_result_df).append(arithmetic_result_df)
+
+
+    compression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='c_real_time', hue='sample_name', ci="sd")
+    plt.title('Compression time in each method and sample')
+    plt.ylabel('Time (sec)')
+    plt.xlabel('Method')
+    compression_plot.savefig(graph_destination_folder + '/compression_time.png', dpi=300)
+
+    decompression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='d_real_time', hue='sample_name', ci="sd")
+    plt.title('Decompression time in each method and sample')
+    plt.ylabel('Time (sec)')
+    plt.xlabel('Method')
+    decompression_plot.savefig(graph_destination_folder + '/decompression_time.png', dpi=300)
+
+    peak_mem_compression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='c_peak_mem', hue='sample_name', ci="sd")
+    plt.title('Compression Peak Memory Usage')
+    plt.ylabel('Memory Usage (MB)')
+    plt.xlabel('Method')
+    peak_mem_compression_plot.savefig(graph_destination_folder + '/memory_compression_stat.png', dpi=300)
+
+    peak_mem_decompression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='d_peak_mem', hue='sample_name', ci="sd")
+    plt.title('Compression Peak Memory Usage')
+    plt.ylabel('Memory Usage (MB)')
+    plt.xlabel('Method')
+    peak_mem_decompression_plot.savefig(graph_destination_folder + '/memory_decompression_stat.png', dpi=300)
+
 def main ():
     # Arithmetic Result Extraction
     # file_size_result_file_path, time_result_file_path, transform_result_path = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -254,8 +299,12 @@ def main ():
     # extract_gzip_result(result_file_path, transformed_result_path)
 
     # Huffman Result Extraction
-    result_file_path, transformed_result_path = sys.argv[1], sys.argv[2]
-    extract_huffman_result(result_file_path, transformed_result_path)
+    # result_file_path, transformed_result_path = sys.argv[1], sys.argv[2]
+    # extract_huffman_result(result_file_path, transformed_result_path)
+
+    # Plot the result into graph
+    gzip_result_file_path, arithmetic_result_file_path, huffman_result_file_path, graph_destination_folder = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+    plot_method_comparation(gzip_result_file_path, arithmetic_result_file_path, huffman_result_file_path, graph_destination_folder)
 
 if __name__ == "__main__":
     main()
