@@ -113,7 +113,6 @@ def extract_huffman_result (result_path, transform_result_path) :
             compression_stat = line.split(',')
             decompression_stat = result_file.readline()[:-1].split(',')
             
-            time_items = compression_stat[0].split('.')[0].split(':')
             result[sample_name]['compression']['real_time'].append(convert_time_to_sec(compression_stat[0]))
             result[sample_name]['compression']['cpu_time'].append(compression_stat[1])
             result[sample_name]['compression']['avg_memory_used'].append(compression_stat[2])
