@@ -263,34 +263,38 @@ def plot_method_comparation (gzip_result_file_path, arithmetic_result_file_path,
     # Construct Complete DataFrame
     result_df = pd.DataFrame()
     result_df = result_df.append(gzip_result_df).append(huffman_result_df).append(arithmetic_result_df)
+
+    # Convert kilobytes to MB
+    result_df['c_peak_mem'] = result_df['c_peak_mem'] / 1000
+    result_df['d_peak_mem'] = result_df['d_peak_mem'] / 1000
     
-    compression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='c_real_time', hue='sample_name', ci="sd")
+    compression_plot = sns.catplot(data=result_df, kind='bar', x='sample_name', y='c_real_time', hue='method_name', ci="sd")
     plt.title('Compression time in each method and sample')
     plt.ylabel('Time (sec)')
     plt.xlabel('Method')
     compression_plot.savefig(graph_destination_folder + '/compression_time.png', dpi=300)
 
-    decompression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='d_real_time', hue='sample_name', ci="sd")
+    decompression_plot = sns.catplot(data=result_df, kind='bar', x='sample_name', y='d_real_time', hue='method_name', ci="sd")
     plt.title('Decompression time in each method and sample')
     plt.ylabel('Time (sec)')
     plt.xlabel('Method')
     decompression_plot.savefig(graph_destination_folder + '/decompression_time.png', dpi=300)
 
-    peak_mem_compression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='c_peak_mem', hue='sample_name', ci="sd")
+    peak_mem_compression_plot = sns.catplot(data=result_df, kind='bar', x='sample_name', y='c_peak_mem', hue='method_name', ci="sd")
     plt.title('Compression Peak Memory Usage')
     plt.ylabel('Memory Usage (MB)')
     plt.xlabel('Method')
     plt.yscale('log')
     peak_mem_compression_plot.savefig(graph_destination_folder + '/memory_compression_stat.png', dpi=300)
 
-    peak_mem_decompression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='d_peak_mem', hue='sample_name', ci="sd")
+    peak_mem_decompression_plot = sns.catplot(data=result_df, kind='bar', x='sample_name', y='d_peak_mem', hue='method_name', ci="sd")
     plt.title('Decompression Peak Memory Usage')
     plt.ylabel('Memory Usage (MB)')
     plt.xlabel('Method')
     plt.yscale('log')
     peak_mem_decompression_plot.savefig(graph_destination_folder + '/memory_decompression_stat.png', dpi=300)
 
-    compressed_size_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='compressed_size', hue='sample_name', ci="sd")
+    compressed_size_plot = sns.catplot(data=result_df, kind='bar', x='sample_name', y='compressed_size', hue='method_name', ci="sd")
     plt.title('Compressed Size')
     plt.ylabel('Compressed Size (GB)')
     plt.xlabel('Method')
