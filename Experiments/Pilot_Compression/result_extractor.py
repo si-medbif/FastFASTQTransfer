@@ -284,7 +284,7 @@ def plot_method_comparation (gzip_result_file_path, arithmetic_result_file_path,
     peak_mem_compression_plot.savefig(graph_destination_folder + '/memory_compression_stat.png', dpi=300)
 
     peak_mem_decompression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='d_peak_mem', hue='sample_name', ci="sd")
-    plt.title('Compression Peak Memory Usage')
+    plt.title('Decompression Peak Memory Usage')
     plt.ylabel('Memory Usage (MB)')
     plt.xlabel('Method')
     peak_mem_decompression_plot.savefig(graph_destination_folder + '/memory_decompression_stat.png', dpi=300)
