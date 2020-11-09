@@ -263,8 +263,7 @@ def plot_method_comparation (gzip_result_file_path, arithmetic_result_file_path,
     # Construct Complete DataFrame
     result_df = pd.DataFrame()
     result_df = result_df.append(gzip_result_df).append(huffman_result_df).append(arithmetic_result_df)
-
-
+    
     compression_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='c_real_time', hue='sample_name', ci="sd")
     plt.title('Compression time in each method and sample')
     plt.ylabel('Time (sec)')
@@ -288,6 +287,12 @@ def plot_method_comparation (gzip_result_file_path, arithmetic_result_file_path,
     plt.ylabel('Memory Usage (MB)')
     plt.xlabel('Method')
     peak_mem_decompression_plot.savefig(graph_destination_folder + '/memory_decompression_stat.png', dpi=300)
+
+    compressed_size_plot = sns.catplot(data=result_df, kind='bar', x='method_name', y='compressed_size', hue='sample_name', ci="sd")
+    plt.title('Compressed Size')
+    plt.ylabel('Compressed Size (GB)')
+    plt.xlabel('Method')
+    compressed_size_plot.savefig(graph_destination_folder + '/compressed_size_stat.png', dpi=300)
 
 def main ():
     # Arithmetic Result Extraction
