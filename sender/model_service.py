@@ -80,56 +80,41 @@ def lstm_record_generator (data_path, model_position=1) :
     input_file.close()
 
 def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
-    input_file = open(data_path, 'r')
+    counter = 1
+    input_feature_file = open(data_path, 'r')
 
-    batch_counter = 0
     X_container = []
     Y_container = []
-    index_counter = 0
 
-    while True :
-        index_counter += 1
-        line = input_file.readline()[:-1]
-        feature_components = line.split(',')
+    while True:
+        line_component = input_feature_file.readline()[:-1].split(',')
 
-        feature_size = math.floor(len(feature_components) / 2)
+        feature_size = math.floor(len(line_component) / 2)
 
-        if feature_size != 90 :
-            print(index_counter, 'Feature Size ', feature_size, line, '\n\n')
-        x = feature_components[:feature_size]
-
-        new_x = []
-        for x_item in x :
-            new_x.append(float(x_item))
-
-        if len(new_x) > 90 :
-            new_x = new_x[:90]
-        
-        x = np.array(new_x, dtype=np.float32)
-
-        y = to_categorical(feature_components[feature_size + model_position - 1], 43)
-        # y = [0] * 43
-        # y[int(feature_components[feature_size + model_position - 1])-1] = 1
-        # y = np.array(y, dtype=np.float32)
+        x = line_component[:feature_size]
+        y = to_categorical([line_component[feature_size]], 43)[0]
 
         X_container.append(x)
         Y_container.append(y)
 
-        batch_counter += 1
-
         if len(X_container) == batch_size :
-            # print('X!!!!', np.array([X_container]).shape, np.array([X_container]))
-            yield np.array([X_container]), np.array(Y_container)
+            
+            X_container = np.array(X_container, dtype=float)
+            X_container = X_container.reshape((X_container.shape[0], X_container.shape[1], 1))
+            Y_container = np.array(Y_container)
+            
+            yield X_container,Y_container
+
+            # Reset Container
             X_container = []
             Y_container = []
-            batch_counter = 0
 
-    input_file.close()
+    input_feature_file.close()
 
-def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None) :
-    if generator is not None :
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
+    if generator is not None and val_generator is not None :
         data_batch_generator = generator
-        validation_batch_generator = generator
+        validation_batch_generator = val_generator
     else :
         if is_lstm :
             data_batch_generator = lstm_record_generator(feature_file, model_position=model_position)
@@ -142,6 +127,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, use_multiprocessing=True, workers=8, max_queue_size=100)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, max_queue_size=32, use_multiprocessing=True, workers=10)
 
     return model, training_hist

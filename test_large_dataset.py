@@ -43,12 +43,12 @@ def evaluate_model (training_history, experiment_name) :
     plt.cla()
     plt.close()
 
-def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False, model_position=1 ,loss='categorical_crossentropy', generator=None) :
+def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False, model_position=1 ,loss='categorical_crossentropy', generator=None, val_generator=None) :
 
     print(experiment_name)
 
     # Train and Evaluate Model
-    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator)    
+    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator, val_generator=val_generator)    
     evaluate_model(training_hist, experiment_name)
     
     # Save trained model to file
@@ -584,7 +584,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_record_generator(feature_file_path, batch_size=2) ,
+    generator= lstm_batch_record_generator(feature_file_path, batch_size=1) ,
+    val_generator= lstm_batch_record_generator(feature_file_path, batch_size=1) ,
     is_lstm=True, experiment_name='Model_31')
 
     # END OF EXPERIMENT 31
