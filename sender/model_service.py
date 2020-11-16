@@ -86,26 +86,26 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
     X_container = []
     Y_container = []
 
-    while True:
-        line_component = input_feature_file.readline()[:-1].split(',')
+        if feature_size != 90 :
+            print(index_counter, 'Feature Size ', feature_size, line, '\n\n')
+            continue
+        
+        x = feature_components[:feature_size]
 
         feature_size = math.floor(len(line_component) / 2)
 
-        x = line_component[:feature_size]
-        y = to_categorical([line_component[feature_size]], 43)[0]
+        if len(new_x) > 90 :
+            new_x = new_x[:90]
+        
+        x = np.array(new_x, dtype=np.float32)
+
+        y = to_categorical(feature_components[feature_size + model_position - 1], 43)
 
         X_container.append(x)
         Y_container.append(y)
 
         if len(X_container) == batch_size :
-            
-            X_container = np.array(X_container, dtype=float)
-            X_container = X_container.reshape((X_container.shape[0], X_container.shape[1], 1))
-            Y_container = np.array(Y_container)
-            
-            yield X_container,Y_container
-
-            # Reset Container
+            yield np.array([X_container]), np.array(Y_container)
             X_container = []
             Y_container = []
 
@@ -127,6 +127,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, max_queue_size=32, use_multiprocessing=True, workers=10)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, max_queue_size=100)
 
     return model, training_hist
