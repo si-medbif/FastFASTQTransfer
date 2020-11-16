@@ -96,6 +96,8 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
 
         if feature_size != 90 :
             print(index_counter, 'Feature Size ', feature_size, line, '\n\n')
+            continue
+        
         x = feature_components[:feature_size]
 
         new_x = []
