@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense, LSTM
 from Experiments.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
-from sender.model_service import train_sequencial_model, lstm_batch_record_generator
+from sender.model_service import train_sequencial_model, lstm_batch_record_generator, lstm_batch_generator_parallel
 
 def evaluate_model (training_history, experiment_name) : 
 
@@ -43,7 +43,7 @@ def evaluate_model (training_history, experiment_name) :
     plt.cla()
     plt.close()
 
-def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False, model_position=1 ,loss='categorical_crossentropy', generator=None) :
+def model_training_experiment_set (feature_file_path, model_configuration, layer_configuration, experiment_name, is_lstm=False, model_position=1 ,loss='categorical_crossentropy', generator=None, val_generator=None) :
 
     print(experiment_name)
 
@@ -584,7 +584,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_record_generator(feature_file_path, batch_size=1) ,
+    generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16) ,
+    val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16) ,
     is_lstm=True, experiment_name='Model_31')
 
     # END OF EXPERIMENT 31
