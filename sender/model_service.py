@@ -108,9 +108,6 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
         x = np.array(new_x, dtype=np.float32)
 
         y = to_categorical(feature_components[feature_size + model_position - 1], 43)
-        # y = [0] * 43
-        # y[int(feature_components[feature_size + model_position - 1])-1] = 1
-        # y = np.array(y, dtype=np.float32)
 
         X_container.append(x)
         Y_container.append(y)
@@ -118,7 +115,6 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
         batch_counter += 1
 
         if len(X_container) == batch_size :
-            # print('X!!!!', np.array([X_container]).shape, np.array([X_container]))
             yield np.array([X_container]), np.array(Y_container)
             X_container = []
             Y_container = []
