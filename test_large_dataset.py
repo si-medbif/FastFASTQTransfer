@@ -48,7 +48,7 @@ def model_training_experiment_set (feature_file_path, model_configuration, layer
     print(experiment_name)
 
     # Train and Evaluate Model
-    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator)    
+    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator, val_generator=val_generator)    
     evaluate_model(training_hist, experiment_name)
     
     # Save trained model to file

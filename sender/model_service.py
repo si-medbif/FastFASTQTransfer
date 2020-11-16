@@ -125,28 +125,30 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
 
     input_file.close()
 
-def preprocess_data_single_thread (data, model_position) :
+def preprocess_data_single_thread (data_path, index, chunk_size, model_position) :
+    data = pd.read_csv(data_path, header=None, nrows=chunk_size, skiprows=index*chunk_size)
+
     no_of_feature = math.floor(len(data.columns) / 2)
 
-    X = np.array(data.iloc[:, :no_of_feature])
-    Y = to_categorical(data.iloc[:, no_of_feature + model_position - 1], 43)
+    X = np.array(data.iloc[:, :no_of_feature], dtype=np.float32)
+    Y = to_categorical(data.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
 
     return X,Y
 
 def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, batch_per_core=200) :
-    index = 1
-
+    big_index = 1
     while True: 
-        batch_data = pd.read_csv(data_path, header=None, nrows=n_cpu_core*batch_per_core, skiprows=index*n_cpu_core*batch_per_core)
         full_data = Parallel(n_jobs=n_cpu_core, prefer="processes", verbose=0)(
-            delayed(preprocess_data_single_thread)(batch_data.iloc[batch_per_core*index : batch_per_core*(index+1), :], model_position)
-            for index in range(0,n_cpu_core)
+            delayed(preprocess_data_single_thread)(data_path, big_index+chunk_index, batch_per_core, model_position)
+            for chunk_index in range(0,n_cpu_core)
         )
         
         X_merged = np.array([np.vstack([item[0] for item in full_data])])
         Y_merged = np.vstack([item[1] for item in full_data])
 
-        yield X_merged.astype(np.float32), Y_merged.astype(np.float32)
+        yield X_merged, Y_merged
+
+        big_index += 1
 
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
     if generator is not None and val_generator is not None :
@@ -164,6 +166,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, )
 
     return model, training_hist
