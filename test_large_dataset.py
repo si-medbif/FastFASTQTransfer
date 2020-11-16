@@ -584,7 +584,7 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_record_generator(feature_file_path, batch_size=2) ,
+    generator= lstm_batch_record_generator(feature_file_path, batch_size=1) ,
     is_lstm=True, experiment_name='Model_31')
 
     # END OF EXPERIMENT 31
