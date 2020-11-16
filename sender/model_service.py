@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
+import pickle
 
 from tensorflow.keras.models import Sequential 
 from tensorflow.keras.utils import to_categorical
@@ -131,6 +132,7 @@ def preprocess_data_single_thread (data_path, index, chunk_size, model_position)
     no_of_feature = math.floor(len(data.columns) / 2)
 
     X = np.array(data.iloc[:, :no_of_feature], dtype=np.float32)
+    X = X.reshape(X.shape[0], 1, X.shape[1])
     Y = to_categorical(data.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
 
     return X,Y
@@ -143,11 +145,13 @@ def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, ba
             for chunk_index in range(0,n_cpu_core)
         )
         
-        X_merged = np.array([np.vstack([item[0] for item in full_data])])
+        X_merged = np.vstack([item[0] for item in full_data])
         Y_merged = np.vstack([item[1] for item in full_data])
 
-        yield X_merged, Y_merged
+        for i in range(0,len(X_merged)) :
+            yield np.array([X_merged[i]]), np.array([Y_merged[i]])
 
+        print('Big Index', big_index)
         big_index += 1
 
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :

@@ -584,8 +584,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16) ,
-    val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16) ,
+    generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
+    val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
     is_lstm=True, experiment_name='Model_31')
 
     # END OF EXPERIMENT 31
