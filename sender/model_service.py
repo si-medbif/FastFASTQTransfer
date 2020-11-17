@@ -3,12 +3,37 @@ import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
 import pickle
+import tensorflow as tf 
 
-from tensorflow.keras.models import Sequential 
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.utils import to_categorical, Sequence
+
+tf.compat.v1.disable_eager_execution()
 
 # Build and Fit the model
 
+class SimpleGenerator (Sequence) :
+    def __init__ (self, data_path, batch_size, model_position, is_lstm) :
+        self.data_path = data_path
+        self.batch_size = batch_size
+        self.model_position = model_position
+        self.is_lstm = is_lstm
+    
+    def __len__(self):
+        return math.ceil(75367700/ self.batch_size)
+
+    def __getitem__ (self, idx):
+        batch_dataset = pd.read_csv(self.data_path, nrows=self.batch_size, skiprows=idx*self.batch_size, header=None)
+
+        X = batch_dataset.iloc[:, :90].to_numpy().astype(np.float32)
+        Y = to_categorical(batch_dataset.iloc[:, 90 - 1 + self.model_position], 43).astype(np.float32)
+
+        if self.is_lstm :
+            X = X.reshape(X.shape[0], 1, X.shape[1])
+
+        return X,Y
+
+    
 def preprocess_score_to_prob (input_y) :
     # Quality Score Has 0-42 (43 Categorical Class Possible)
     return to_categorical(input_y, 43)
@@ -170,6 +195,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, )
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, use_multiprocessing=True, workers=10, max_queue_size=200)
 
     return model, training_hist

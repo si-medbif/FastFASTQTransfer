@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense, LSTM
 from Experiments.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
-from sender.model_service import train_sequencial_model, lstm_batch_record_generator, lstm_batch_generator_parallel
+from sender.model_service import train_sequencial_model, lstm_batch_record_generator, lstm_batch_generator_parallel, SimpleGenerator
 
 def evaluate_model (training_history, experiment_name) : 
 
@@ -569,26 +569,55 @@ def main (args) :
 
     # # END OF EXPERIMENT 30
 
-    # EXPERIMENT 31 STARTS HERE
+    # # EXPERIMENT 31 STARTS HERE
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 43,
+    #     'no_of_epoch' : 100,
+    #     'steps_per_epoch': 753677
+    # }
+
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
+
+    # ],
+    # generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
+    # val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
+    # is_lstm=True, experiment_name='Model_31')
+
+    # # END OF EXPERIMENT 31
+
+    # EXPERIMENT 32 STARTS HERE
     model_configuration = {
         'input_dim' : 90,
         'output_dim' : 43,
         'no_of_epoch' : 100,
-        'steps_per_epoch': 753677
+        'steps_per_epoch': 736
     }
 
     model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
         LSTM(model_configuration['input_dim']),
         Dense(500, activation='relu'),
         Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
-    val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
-    is_lstm=True, experiment_name='Model_31')
+    generator= SimpleGenerator(feature_file_path, batch_size=1024, model_position=1, is_lstm=True) ,
+    val_generator = SimpleGenerator(feature_file_path, batch_size=1024, model_position=1, is_lstm=True) ,
+    is_lstm=True, experiment_name='Model_32')
 
-    # END OF EXPERIMENT 31
+    # END OF EXPERIMENT 32
 
 if __name__ == "__main__":
     # python test_large_dataset.py <Read File> <Quality Score File> <Feature File Path>
