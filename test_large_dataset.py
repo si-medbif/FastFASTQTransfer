@@ -1,4 +1,5 @@
 import sys
+import math
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense, LSTM
@@ -591,11 +592,13 @@ def main (args) :
     # # END OF EXPERIMENT 31
 
     # EXPERIMENT 32 STARTS HERE
+    no_of_data = 753677
+    batch_size = 64
     model_configuration = {
         'input_dim' : 90,
         'output_dim' : 43,
         'no_of_epoch' : 100,
-        'steps_per_epoch': 736
+        'steps_per_epoch': math.ceil(no_of_data/batch_size)
     }
 
     model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
@@ -613,8 +616,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= SimpleGenerator(feature_file_path, batch_size=1024, model_position=1, is_lstm=True) ,
-    val_generator = SimpleGenerator(feature_file_path, batch_size=1024, model_position=1, is_lstm=True) ,
+    generator= lstm_batch_generator_parallel(feature_file_path) ,
+    val_generator = lstm_batch_generator_parallel(feature_file_path) ,
     is_lstm=True, experiment_name='Model_32')
 
     # END OF EXPERIMENT 32

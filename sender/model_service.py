@@ -8,8 +8,6 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical, Sequence
 
-tf.compat.v1.disable_eager_execution()
-
 # Build and Fit the model
 
 class SimpleGenerator (Sequence) :
@@ -151,9 +149,7 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
 
     input_file.close()
 
-def preprocess_data_single_thread (data_path, index, chunk_size, model_position) :
-    data = pd.read_csv(data_path, header=None, nrows=chunk_size, skiprows=index*chunk_size)
-
+def preprocess_data_single_thread (data, model_position) :
     no_of_feature = math.floor(len(data.columns) / 2)
 
     X = np.array(data.iloc[:, :no_of_feature], dtype=np.float32)
@@ -163,21 +159,21 @@ def preprocess_data_single_thread (data_path, index, chunk_size, model_position)
     return X,Y
 
 def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, batch_per_core=200) :
-    big_index = 1
-    while True: 
-        full_data = Parallel(n_jobs=n_cpu_core, prefer="processes", verbose=0)(
-            delayed(preprocess_data_single_thread)(data_path, big_index+chunk_index, batch_per_core, model_position)
-            for chunk_index in range(0,n_cpu_core)
-        )
-        
-        X_merged = np.vstack([item[0] for item in full_data])
-        Y_merged = np.vstack([item[1] for item in full_data])
+    while True:
+        data_chunks = pd.read_csv(data_path, chunksize=n_cpu_core*batch_per_core)
 
-        for i in range(0,len(X_merged)) :
-            yield np.array([X_merged[i]]), np.array([Y_merged[i]])
+        for chunk in data_chunks :
 
-        print('Big Index', big_index)
-        big_index += 1
+            full_data = Parallel(n_jobs=n_cpu_core, prefer="processes", verbose=0)(
+                delayed(preprocess_data_single_thread)(chunk.iloc[core_no * batch_per_core: (core_no+1) * batch_per_core,:],model_position)
+                for core_no in range(0,n_cpu_core)
+            )
+            
+            X_merged = np.vstack([item[0] for item in full_data])
+            Y_merged = np.vstack([item[1] for item in full_data])
+
+            for i in range(0,len(X_merged)) :
+                yield np.array([X_merged[i]]), np.array([Y_merged[i]])
 
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
     if generator is not None and val_generator is not None :
@@ -195,6 +191,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, use_multiprocessing=True, workers=10, max_queue_size=200)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
 
     return model, training_hist
