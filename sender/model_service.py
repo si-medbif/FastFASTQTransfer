@@ -1,12 +1,37 @@
 import math
 import pandas as pd
 import numpy as np
+from joblib import Parallel, delayed
+import pickle
+import tensorflow as tf 
 
-from tensorflow.keras.models import Sequential 
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.utils import to_categorical, Sequence
 
 # Build and Fit the model
 
+class SimpleGenerator (Sequence) :
+    def __init__ (self, data_path, batch_size, model_position, is_lstm) :
+        self.data_path = data_path
+        self.batch_size = batch_size
+        self.model_position = model_position
+        self.is_lstm = is_lstm
+    
+    def __len__(self):
+        return math.ceil(75367700/ self.batch_size)
+
+    def __getitem__ (self, idx):
+        batch_dataset = pd.read_csv(self.data_path, nrows=self.batch_size, skiprows=idx*self.batch_size, header=None)
+
+        X = batch_dataset.iloc[:, :90].to_numpy().astype(np.float32)
+        Y = to_categorical(batch_dataset.iloc[:, 90 - 1 + self.model_position], 43).astype(np.float32)
+
+        if self.is_lstm :
+            X = X.reshape(X.shape[0], 1, X.shape[1])
+
+        return X,Y
+
+    
 def preprocess_score_to_prob (input_y) :
     # Quality Score Has 0-42 (43 Categorical Class Possible)
     return to_categorical(input_y, 43)
@@ -86,6 +111,7 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
     X_container = []
     Y_container = []
 
+    while True:
         if feature_size != 90 :
             print(index_counter, 'Feature Size ', feature_size, line, '\n\n')
             continue
@@ -111,6 +137,28 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
 
     input_feature_file.close()
 
+def preprocess_data_single_thread (data, model_position) :
+    no_of_feature = math.floor(len(data.columns) / 2)
+
+    X = np.array(data.iloc[:, :no_of_feature], dtype=np.float32)
+    X = X.reshape(X.shape[0], 1, X.shape[1])
+    Y = to_categorical(data.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
+
+    return X,Y
+
+def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, batch_per_core=200) :
+    while True:
+        data_chunks = pd.read_csv(data_path, chunksize=n_cpu_core*batch_per_core)
+
+        for chunk in data_chunks :
+            no_of_feature = math.floor(len(chunk.columns) / 2)
+
+            X = np.array(chunk.iloc[:, :no_of_feature], dtype=np.float32)
+            X = X.reshape(X.shape[0], 1, X.shape[1])
+            Y = to_categorical(chunk.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
+
+            yield X,Y
+
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
     if generator is not None and val_generator is not None :
         data_batch_generator = generator
@@ -127,6 +175,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch, max_queue_size=100)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
 
     return model, training_hist
