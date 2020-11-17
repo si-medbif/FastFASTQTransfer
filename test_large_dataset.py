@@ -570,34 +570,36 @@ def main (args) :
 
     # # END OF EXPERIMENT 30
 
-    # # EXPERIMENT 31 STARTS HERE
-    # model_configuration = {
-    #     'input_dim' : 90,
-    #     'output_dim' : 43,
-    #     'no_of_epoch' : 100,
-    #     'steps_per_epoch': 753677
-    # }
+    # EXPERIMENT 31 STARTS HERE
+    no_of_data = 75357772
+    batch_size = 4096
+    model_configuration = {
+        'input_dim' : 90,
+        'output_dim' : 43,
+        'no_of_epoch' : 10,
+        'steps_per_epoch': math.ceil(no_of_data/batch_size)
+    }
 
-    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
-    #     LSTM(model_configuration['input_dim']),
-    #     Dense(500, activation='relu'),
-    #     Dense(500, activation='relu'),
-    #     Dense(model_configuration['output_dim'], activation='relu')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+        LSTM(model_configuration['input_dim']),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(model_configuration['output_dim'], activation='relu')
 
-    # ],
-    # generator= lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
-    # val_generator = lstm_batch_generator_parallel(feature_file_path, n_cpu_core=16, batch_per_core=40000) ,
-    # is_lstm=True, experiment_name='Model_31')
+    ],
+    generator= lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
+    val_generator = lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
+    is_lstm=True, experiment_name='Model_31')
 
-    # # END OF EXPERIMENT 31
+    # END OF EXPERIMENT 31
 
     # EXPERIMENT 32 STARTS HERE
-    no_of_data = 753677
+    no_of_data = 75357772
     batch_size = 64
     model_configuration = {
         'input_dim' : 90,
         'output_dim' : 43,
-        'no_of_epoch' : 100,
+        'no_of_epoch' : 10,
         'steps_per_epoch': math.ceil(no_of_data/batch_size)
     }
 
@@ -616,8 +618,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_generator_parallel(feature_file_path) ,
-    val_generator = lstm_batch_generator_parallel(feature_file_path) ,
+    generator= lstm_batch_generator_parallel(feature_file_path, chunk_size=batch_size) ,
+    val_generator = lstm_batch_generator_parallel(feature_file_path, chunk_size=batch_size) ,
     is_lstm=True, experiment_name='Model_32')
 
     # END OF EXPERIMENT 32
