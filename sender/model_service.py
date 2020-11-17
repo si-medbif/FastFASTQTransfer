@@ -163,17 +163,13 @@ def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, ba
         data_chunks = pd.read_csv(data_path, chunksize=n_cpu_core*batch_per_core)
 
         for chunk in data_chunks :
+            no_of_feature = math.floor(len(chunk.columns) / 2)
 
-            full_data = Parallel(n_jobs=n_cpu_core, prefer="processes", verbose=0)(
-                delayed(preprocess_data_single_thread)(chunk.iloc[core_no * batch_per_core: (core_no+1) * batch_per_core,:],model_position)
-                for core_no in range(0,n_cpu_core)
-            )
-            
-            X_merged = np.vstack([item[0] for item in full_data])
-            Y_merged = np.vstack([item[1] for item in full_data])
+            X = np.array(chunk.iloc[:, :no_of_feature], dtype=np.float32)
+            X = X.reshape(X.shape[0], 1, X.shape[1])
+            Y = to_categorical(chunk.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
 
-            for i in range(0,len(X_merged)) :
-                yield np.array([X_merged[i]]), np.array([Y_merged[i]])
+            yield X,Y
 
 def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
     if generator is not None and val_generator is not None :
