@@ -49,7 +49,7 @@ def model_training_experiment_set (feature_file_path, model_configuration, layer
     print(experiment_name)
 
     # Train and Evaluate Model
-    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], step_per_epoch=model_configuration['steps_per_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator, val_generator=val_generator)    
+    model, training_hist = train_sequencial_model(layer_configuration, feature_file_path, epoch=model_configuration['no_of_epoch'], model_position=model_position, is_lstm=is_lstm, loss=loss, generator=generator, val_generator=val_generator)    
     evaluate_model(training_hist, experiment_name)
     
     # Save trained model to file
@@ -594,13 +594,12 @@ def main (args) :
     # END OF EXPERIMENT 31
 
     # EXPERIMENT 32 STARTS HERE
-    no_of_data = 75357772
-    batch_size = 64
+    no_of_data = 753677
     model_configuration = {
         'input_dim' : 90,
         'output_dim' : 43,
-        'no_of_epoch' : 10,
-        'steps_per_epoch': math.ceil(no_of_data/batch_size)
+        'no_of_epoch' : 100,
+        'batch_size' : 512
     }
 
     model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
@@ -618,8 +617,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= lstm_batch_generator_parallel(feature_file_path, chunk_size=batch_size) ,
-    val_generator = lstm_batch_generator_parallel(feature_file_path, chunk_size=batch_size) ,
+    generator= SimpleGenerator(feature_file_path, batch_size=model_configuration['batch_size'], model_position=1, is_lstm=True) ,
+    val_generator = SimpleGenerator(feature_file_path, batch_size=model_configuration['batch_size'], model_position=1, is_lstm=True) ,
     is_lstm=True, experiment_name='Model_32')
 
     # END OF EXPERIMENT 32

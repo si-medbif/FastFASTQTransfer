@@ -16,15 +16,31 @@ class SimpleGenerator (Sequence) :
         self.batch_size = batch_size
         self.model_position = model_position
         self.is_lstm = is_lstm
+
+        # Find Line Size
+        dataset = open(self.data_path)
+        line = dataset.readline()
+        dataset.close()
+
+        self.line_size = len(line)
+        self.feature_size = math.ceil(len(line.split('\t')) / 2)
     
     def __len__(self):
         return math.ceil(75367700/ self.batch_size)
 
     def __getitem__ (self, idx):
-        batch_dataset = pd.read_csv(self.data_path, nrows=self.batch_size, skiprows=idx*self.batch_size, header=None)
+        dataset = open(self.data_path, 'r')
 
-        X = batch_dataset.iloc[:, :90].to_numpy().astype(np.float32)
-        Y = to_categorical(batch_dataset.iloc[:, 90 - 1 + self.model_position], 43).astype(np.float32)
+        # Seek to designated position in the file
+        if idx > 0 :
+            dataset.seek(self.line_size * ((self.batch_size * idx)-1))
+
+        lines = [line.split('\t') for line in dataset.read(self.line_size * self.feature_size).split('\n')[:-1]]
+        dataset.close()
+
+        X = np.array([line[: self.feature_size] for line in lines], dtype=np.float32)
+        Y = to_categorical([ord(line[self.feature_size - 1 + self.model_position])-33 for line in lines], 43).astype(np.float32)
+
 
         if self.is_lstm :
             X = X.reshape(X.shape[0], 1, X.shape[1])
@@ -162,7 +178,7 @@ def lstm_batch_generator_parallel (data_path, model_position=1, chunk_size=256) 
 
             yield X,Y
 
-def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", step_per_epoch=20000, model_position=None, is_lstm=False, generator=None, val_generator=None) :
+def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", loss="categorical_crossentropy", model_position=None, is_lstm=False, generator=None, val_generator=None) :
     if generator is not None and val_generator is not None :
         data_batch_generator = generator
         validation_batch_generator = val_generator
@@ -178,6 +194,6 @@ def train_sequencial_model (layers, feature_file, epoch=100, optimiser="adam", l
 
     model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy'])    
 
-    training_hist = model.fit(data_batch_generator, epochs=epoch, steps_per_epoch=step_per_epoch, validation_data=validation_batch_generator, validation_steps=step_per_epoch)
+    training_hist = model.fit(data_batch_generator, epochs=epoch, validation_data=validation_batch_generator, use_multiprocessing=True, workers=16)
 
     return model, training_hist
