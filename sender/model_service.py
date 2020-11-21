@@ -149,18 +149,9 @@ def lstm_batch_record_generator (data_path, batch_size=200, model_position=1) :
 
     input_file.close()
 
-def preprocess_data_single_thread (data, model_position) :
-    no_of_feature = math.floor(len(data.columns) / 2)
-
-    X = np.array(data.iloc[:, :no_of_feature], dtype=np.float32)
-    X = X.reshape(X.shape[0], 1, X.shape[1])
-    Y = to_categorical(data.iloc[:, no_of_feature + model_position - 1], 43).astype(np.float32)
-
-    return X,Y
-
-def lstm_batch_generator_parallel (data_path, model_position=1, n_cpu_core=8, batch_per_core=200) :
+def lstm_batch_generator_parallel (data_path, model_position=1, chunk_size=256) :
     while True:
-        data_chunks = pd.read_csv(data_path, chunksize=n_cpu_core*batch_per_core)
+        data_chunks = pd.read_csv(data_path, chunksize=chunk_size, header=None)
 
         for chunk in data_chunks :
             no_of_feature = math.floor(len(chunk.columns) / 2)
