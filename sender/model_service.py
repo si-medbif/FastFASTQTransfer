@@ -47,7 +47,6 @@ class SimpleGenerator (Sequence) :
 
         return X,Y
 
-    
 def preprocess_score_to_prob (input_y) :
     # Quality Score Has 0-42 (43 Categorical Class Possible)
     return to_categorical(input_y, 43)

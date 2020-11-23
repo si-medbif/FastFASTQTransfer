@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Dense, LSTM
 from Experiments.Model.parallel_feature_extraction import parallel_extract_feature, create_fastq_jobs
-from sender.model_service import train_sequencial_model, lstm_batch_record_generator, lstm_batch_generator_parallel, SimpleGenerator
+from sender.model_service import train_sequencial_model, lstm_batch_record_generator, lstm_batch_generator_parallel, SimpleGenerator, ChunkFileGenerator
 
 def evaluate_model (training_history, experiment_name) : 
 
@@ -570,28 +570,28 @@ def main (args) :
 
     # # END OF EXPERIMENT 30
 
-    # EXPERIMENT 31 STARTS HERE
-    no_of_data = 75357772
-    batch_size = 4096
-    model_configuration = {
-        'input_dim' : 90,
-        'output_dim' : 43,
-        'no_of_epoch' : 10,
-        'steps_per_epoch': math.ceil(no_of_data/batch_size)
-    }
+    # # EXPERIMENT 31 STARTS HERE
+    # no_of_data = 75357772
+    # batch_size = 4096
+    # model_configuration = {
+    #     'input_dim' : 90,
+    #     'output_dim' : 43,
+    #     'no_of_epoch' : 10,
+    #     'steps_per_epoch': math.ceil(no_of_data/batch_size)
+    # }
 
-    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
-        LSTM(model_configuration['input_dim']),
-        Dense(500, activation='relu'),
-        Dense(500, activation='relu'),
-        Dense(model_configuration['output_dim'], activation='relu')
+    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+    #     LSTM(model_configuration['input_dim']),
+    #     Dense(500, activation='relu'),
+    #     Dense(500, activation='relu'),
+    #     Dense(model_configuration['output_dim'], activation='relu')
 
-    ],
-    generator= lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
-    val_generator = lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
-    is_lstm=True, experiment_name='Model_31')
+    # ],
+    # generator= lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
+    # val_generator = lstm_batch_generator_parallel(feature_file_path, model_position=1, chunk_size=batch_size) ,
+    # is_lstm=True, experiment_name='Model_31')
 
-    # END OF EXPERIMENT 31
+    # # END OF EXPERIMENT 31
 
     # EXPERIMENT 32 STARTS HERE
     no_of_data = 753677
@@ -617,8 +617,8 @@ def main (args) :
         Dense(model_configuration['output_dim'], activation='relu')
 
     ],
-    generator= SimpleGenerator(feature_file_path, batch_size=model_configuration['batch_size'], model_position=1, is_lstm=True) ,
-    val_generator = SimpleGenerator(feature_file_path, batch_size=model_configuration['batch_size'], model_position=1, is_lstm=True) ,
+    generator= ChunkFileGenerator(feature_file_path, model_position=1, is_lstm=True) ,
+    val_generator = ChunkFileGenerator(feature_file_path, model_position=1, is_lstm=True) ,
     is_lstm=True, experiment_name='Model_32')
 
     # END OF EXPERIMENT 32
