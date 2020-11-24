@@ -1,15 +1,10 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def generate_training_statistic_file (training_history, experiment_name, destination_file_path = 'Results/model_experiment/training_stat') : 
-
     # Dump History to File
-    model_hist_file = open(destination_file_path + '/' + experiment_name + '.model_hist', 'w')
-    model_hist_file.write('loss,val_loss,acc,val_acc\n')
-    
-    for i in range(0,len(training_history.history['loss'])) :
-        model_hist_file.write(str(training_history.history['loss'][i]) + ',' + str(training_history.history['val_loss'][i]) + ',' + str(training_history.history['accuracy'][i]) + ',' + str(training_history.history['val_accuracy'][i]) + '\n')
-
-    model_hist_file.close()
+    result_df = pd.DataFrame(training_history.history)
+    result_df.to_csv(destination_file_path + '/' + experiment_name + '.model_hist')
 
 def plot_loss_acc_to_file (training_history, experiment_name, loss_chart_path='.', accuracy_chart_path='.') :
     # Loss Plot
