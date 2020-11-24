@@ -14,7 +14,7 @@ import pandas as pd
 # INPUT: Feature File Path, Destination Hist Path
 # OUTPUT: History File
 
-def experiment_builder (data_path, layers, n_row_per_chunk, n_chunk, epoch, optimiser='sgd', loss='mean_squared_error') :
+def experiment_builder (data_path, training_hist_folder_path, layers, n_row_per_chunk, n_chunk, epoch, optimiser='sgd', loss='mean_squared_error') :
     dataset = pd.read_csv(data_path, header=None, nrows=n_row_per_chunk * n_chunk)
 
     for n_data in range(n_row_per_chunk, n_row_per_chunk * n_chunk, n_row_per_chunk) :
@@ -26,7 +26,7 @@ def experiment_builder (data_path, layers, n_row_per_chunk, n_chunk, epoch, opti
         model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse'])
         training_hist = model.fit(x=X, y=Y, epochs=epoch, batch_size=1, validation_data=(X,Y))
 
-        generate_training_statistic_file(training_hist, 'Model_Tester_' + str(n_data), destination_file_path = 'Results/model_experiment/training_stat/Base_Model')
+        generate_training_statistic_file(training_hist, 'Model_Tester_' + str(n_data), destination_file_path = training_hist_folder_path)
 
 def main (args) :
     layers = Sequential([
