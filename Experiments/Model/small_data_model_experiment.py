@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 
 # Model Memoisation Capacity Experiment
+# INPUT: Feature File Path, Destination Hist Path
+# OUTPUT: History File
 
 def experiment_builder (data_path, layers, n_row_per_chunk, n_chunk, epoch, optimiser='sgd', loss='mean_squared_error') :
     dataset = pd.read_csv(data_path, header=None, nrows=n_row_per_chunk * n_chunk)
