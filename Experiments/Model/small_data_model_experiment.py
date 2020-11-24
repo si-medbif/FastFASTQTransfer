@@ -34,7 +34,7 @@ def main (args) :
         Dense(50, activation='softmax'),
         Dense(43, activation='softmax'),
     ])
-    experiment_builder(args[1], layers, n_row_per_chunk=10000, n_chunk=100, epoch=100, optimiser='adam', loss='mean_squared_error')
+    experiment_builder(args[1], args[2], layers, n_row_per_chunk=10000, n_chunk=100, epoch=100, optimiser='adam', loss='mean_squared_error')
 
 if __name__ == "__main__":
     main(sys.argv)
