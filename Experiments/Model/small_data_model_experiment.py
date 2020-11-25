@@ -9,6 +9,7 @@ import sys
 import pickle
 import numpy as np
 import pandas as pd
+import ordinal_categorical_crossentropy as OCC
 
 # Model Memoisation Capacity Experiment
 # INPUT: Feature File Path, Destination Hist Path
@@ -23,7 +24,7 @@ def experiment_builder (data_path, training_hist_folder_path, layers, n_row_per_
         Y = to_categorical(Y, 43).astype(np.uint8)
 
         model = Sequential(layers)
-        model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse'])
+        model.compile(optimizer=optimiser, loss=loss, metrics=['accuracy', 'mse', 'mae'])
         training_hist = model.fit(x=X, y=Y, epochs=epoch, batch_size=1, validation_data=(X,Y))
 
         generate_training_statistic_file(training_hist, 'Model_Tester_' + str(n_data), destination_file_path = training_hist_folder_path)
@@ -31,10 +32,10 @@ def experiment_builder (data_path, training_hist_folder_path, layers, n_row_per_
 def main (args) :
     layers = Sequential([
         Dense(90, activation='softmax'),
-        Dense(50, activation='softmax'),
+        Dense(90, activation='softmax'),
         Dense(43, activation='softmax'),
     ])
-    experiment_builder(args[1], args[2], layers, n_row_per_chunk=10000, n_chunk=100, epoch=100, optimiser='adam', loss='mean_squared_error')
+    experiment_builder(args[1], args[2], layers, n_row_per_chunk=1000, n_chunk=100, epoch=100, optimiser='adam', loss=OCC.loss)
 
 if __name__ == "__main__":
     main(sys.argv)
