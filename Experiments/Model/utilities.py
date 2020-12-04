@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 def generate_training_statistic_file (training_history, experiment_name, destination_file_path = 'Results/model_experiment/training_stat') : 
     # Dump History to File
     result_df = pd.DataFrame(training_history.history)
-    result_df.to_csv(destination_file_path + '/' + experiment_name + '.model_hist')
+    result_df['epoch'] = [i+1 for i in range(len(result_df))]
+    result_df.to_csv(destination_file_path + '/' + experiment_name + '.model_hist', index=False)
 
 def plot_loss_acc_to_file (training_history, experiment_name, loss_chart_path='.', accuracy_chart_path='.') :
     # Loss Plot
