@@ -34,5 +34,11 @@ def main(args) :
     plt.title('Percentage of quality score matches mode in each position')
     plt.show()
 
+    sns.lineplot(y=dataset.mode().iloc[0,:].tolist(), x=range(1,91))
+    plt.xlabel('Position')
+    plt.ylabel('Mode')
+    plt.title('Mode of quality score in each position')
+    plt.show()
+
 if __name__ == "__main__":
     main(sys.argv)
