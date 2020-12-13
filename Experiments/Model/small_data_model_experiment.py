@@ -1,6 +1,6 @@
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from data_preprocessing import extract_x_y_from_pandas
 from utilities import generate_training_statistic_file
@@ -34,7 +34,9 @@ def main (args) :
         Dense(90, activation='softmax'),
         Dense(43, activation='softmax'),
     ])
-    experiment_builder(args[1], args[2], layers, n_row_per_chunk=10, n_chunk=10, epoch=100, optimiser='adam', loss=OCC.loss)
+
+    optimiser = Adam()
+    experiment_builder(args[1], args[2], layers, n_row_per_chunk=10, n_chunk=10, epoch=100, optimiser=optimiser, loss=OCC.loss)
 
 if __name__ == "__main__":
     main(sys.argv)
