@@ -54,7 +54,7 @@ def average_position_content (position_content, no_of_record) :
     return position_content
 
 def plot_line_plot (data, file_name, destination_path) :
-    line_plot = sns.lineplot(data=data, x='Position', y='Content Percentages', hue='%').set_title("Sequence content across all bases (" + file_name + ")")
+    line_plot = sns.barplot(data=data, x='Position', y='Content Percentages', hue='%').set_title("Sequence content across all bases (" + file_name + ")")
     line_plot.figure.set_size_inches(25, 9)
     line_plot.figure.savefig(destination_path + '/' + file_name.split('.')[0] + '_base_content.png', dpi=300)
 
