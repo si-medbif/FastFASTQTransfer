@@ -78,21 +78,13 @@ def main (args) :
     base_content = []
     for i in range(0, no_of_feature) :
         base_content.append({'A':0, 'T':0, 'C': 0, 'G':0, 'N':0})
-
-
-    # DEBUG: Limit the line
-    line_counter = 1000
-    
+  
     for line in feature_file :
         current_line = line[:-1].split(',')[:no_of_feature]
 
         base_content = process_line(current_line, base_content)
         
         no_of_read += 1
-
-        # DEBUG: Limit the line
-        if line_counter == no_of_read :
-            break
 
     base_content_percentatge = convert_base_content_to_percentage(base_content, no_of_read)
     base_content_df = convert_base_content_to_pandas_df(base_content_percentatge)
