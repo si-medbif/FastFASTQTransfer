@@ -3,6 +3,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras import backend as K
 from data_preprocessing import extract_x_y_from_pandas
 from utilities import generate_training_statistic_file
 
@@ -11,6 +12,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import ordinal_categorical_crossentropy as OCC
+import weighted_categorical_crossentropy as WCC
 
 # Model Memoisation Capacity Experiment
 # INPUT: Feature File Path, Destination Hist Path, Model Path, Experiment Name
@@ -57,16 +59,19 @@ def experiment_builder (data_path, training_hist_folder_path, model_path, layers
     #     model.save('Results/model_experiment/model/Base_Model/Model_Tester_' + str(n_data) + '.h5')
 
 def main (args) :
+    weights = np.ones((43,))
+
     layers = [
         Dense(90, activation='softmax'),
         Dense(90, activation='softmax'),
         Dense(43, activation='softmax'),
     ]
     optimiser = Adam()
-    loss = OCC.loss
-    lrs_callback = LearningRateScheduler(learning_rate_scheduler)
+    loss = WCC.weighted_categorical_crossentropy(weights)
 
-    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=200, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[lrs_callback])
+    # lrs_callback = LearningRateScheduler(learning_rate_scheduler)
+
+    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=200, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[])
 
 if __name__ == "__main__":
     main(sys.argv)

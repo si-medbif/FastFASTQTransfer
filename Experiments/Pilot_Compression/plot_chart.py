@@ -2,9 +2,24 @@ import sys
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+import pickle 
 
 # Pilot the result from result_extractor.py
 # INPUT: <PLOT PATH> <SAMPLE SIZE FILE> <RESULT FILE>
+
+def plot_whole_time (df, dest_path, palette) :
+    # Transfer Speed in Mbps (Megabit per second)
+    speed = 100
+
+    # Convert Bytes to Megabit
+    df['transfer_time'] = df['compressed_size'] / 125000 / speed
+    df['whole_time'] = df['c_real_time'] + df['transfer_time'] + df['d_real_time']
+    print(df, df.columns)
+
+    f_test = open('f_test.pickle', 'wb')
+    pickle.dump(df, f_test)
+    f_test.close()
+    
 
 def plot_compression_time (df, dest_path, palette) :
     plt.figure(figsize=(14,8))
@@ -127,15 +142,16 @@ def main (args) :
     colour_unique = whole_df['Method'].unique()
     palette = dict(zip(colour_unique, sns.color_palette(n_colors=len(colour_unique))))
 
-    plot_compression_time(whole_df, plot_path + '/compression_time.png', palette)
-    plot_decompression_time(whole_df, plot_path + '/decompression_time.png', palette)
-    plot_compressed_size (whole_df, plot_path + '/compressed_size.png', palette)
-    plot_compression_max_memory (whole_df, plot_path + '/compression_max_memory.png', palette)
-    plot_decompression_max_memory (whole_df, plot_path + '/decompression_max_memory.png', palette)
-    plot_compression_rate(whole_df, plot_path + '/compression_rate.png', palette) 
-    plot_decompression_rate(whole_df, plot_path + '/decompression_rate.png', palette)
-    plot_decreased_percentage(whole_df, plot_path + '/decreased_rate.png', palette)
-    plot_avg_decreased_percentage(whole_df, plot_path + '/whole_decreased_rate.png')
+    # plot_compression_time(whole_df, plot_path + '/compression_time.png', palette)
+    # plot_decompression_time(whole_df, plot_path + '/decompression_time.png', palette)
+    # plot_compressed_size (whole_df, plot_path + '/compressed_size.png', palette)
+    # plot_compression_max_memory (whole_df, plot_path + '/compression_max_memory.png', palette)
+    # plot_decompression_max_memory (whole_df, plot_path + '/decompression_max_memory.png', palette)
+    # plot_compression_rate(whole_df, plot_path + '/compression_rate.png', palette) 
+    # plot_decompression_rate(whole_df, plot_path + '/decompression_rate.png', palette)
+    # plot_decreased_percentage(whole_df, plot_path + '/decreased_rate.png', palette)
+    # plot_avg_decreased_percentage(whole_df, plot_path + '/whole_decreased_rate.png')
+    plot_whole_time(whole_df, plot_path + 'whole_thime.png', palette)
 
 if __name__ == "__main__":
     main(sys.argv)
