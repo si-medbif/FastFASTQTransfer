@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import ordinal_categorical_crossentropy as OCC
 import weighted_categorical_crossentropy as WCC
+import weighted_ordinal_crossentropy as WOC
 
 # Model Memoisation Capacity Experiment
 # INPUT: Feature File Path, Destination Hist Path, Model Path, Experiment Name
@@ -59,7 +60,7 @@ def experiment_builder (data_path, training_hist_folder_path, model_path, layers
     #     model.save('Results/model_experiment/model/Base_Model/Model_Tester_' + str(n_data) + '.h5')
 
 def main (args) :
-    # weights = np.ones((43,))
+    
 
     layers = [
         Dense(90, activation='softmax'),
@@ -68,9 +69,21 @@ def main (args) :
     ]
     optimiser = Adam()
     
-    # loss = WCC.weighted_categorical_crossentropy(weights)
-    loss = 'mean_squared_error'
+    weights = np.ones((43,))
+    weights[38] = 1/60
 
+    # Loss Function Selector
+
+    # Weighted Categorical Crossentropy
+    # loss = WCC.weighted_categorical_crossentropy(weights)
+
+    # Weighted Oridinal Crossentropy
+    loss = WOC.weighted_ordinal_crossentropy(weights)
+
+    # Mean Squared Error
+    # loss = 'mean_squared_error'
+
+    # Callbacks
     # lrs_callback = LearningRateScheduler(learning_rate_scheduler)
 
     experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=1000, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[], model_position=50)
