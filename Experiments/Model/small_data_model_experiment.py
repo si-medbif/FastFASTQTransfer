@@ -23,14 +23,14 @@ def learning_rate_scheduler (epoch, lr) :
         lr = lr/2
     return lr
 
-def experiment_builder (data_path, training_hist_folder_path, model_path, layers, n_row_per_chunk, n_chunk, epoch, optimiser='sgd', loss='mean_squared_error', experiment_name='Base_Model', callbacks=[]) :
+def experiment_builder (data_path, training_hist_folder_path, model_path, layers, n_row_per_chunk, n_chunk, epoch, optimiser='sgd', loss='mean_squared_error', experiment_name='Base_Model', callbacks=[], model_position=1) :
     dataset = pd.read_csv(data_path, header=None, nrows=n_row_per_chunk * n_chunk)
 
     # for n_data in range(n_row_per_chunk, n_row_per_chunk * n_chunk, n_row_per_chunk) :
     for n_data in range(1000,1001,1000):
-        X,Y = extract_x_y_from_pandas(dataset.iloc[:n_data, :], model_position=1)
+        X,Y = extract_x_y_from_pandas(dataset.iloc[:n_data, :], model_position=model_position)
         X = np.array(X, dtype=np.uint8)
-        Y = to_categorical(Y, 43).astype(np.uint8)
+        Y = to_categorical(Y, 43)
 
         model = Sequential()
 
@@ -59,7 +59,7 @@ def experiment_builder (data_path, training_hist_folder_path, model_path, layers
     #     model.save('Results/model_experiment/model/Base_Model/Model_Tester_' + str(n_data) + '.h5')
 
 def main (args) :
-    weights = np.ones((43,))
+    # weights = np.ones((43,))
 
     layers = [
         Dense(90, activation='softmax'),
@@ -67,11 +67,13 @@ def main (args) :
         Dense(43, activation='softmax'),
     ]
     optimiser = Adam()
-    loss = WCC.weighted_categorical_crossentropy(weights)
+    
+    # loss = WCC.weighted_categorical_crossentropy(weights)
+    loss = 'mean_squared_error'
 
     # lrs_callback = LearningRateScheduler(learning_rate_scheduler)
 
-    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=200, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[])
+    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=1000, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[], model_position=50)
 
 if __name__ == "__main__":
     main(sys.argv)
