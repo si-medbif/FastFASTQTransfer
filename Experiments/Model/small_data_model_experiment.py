@@ -1,4 +1,4 @@
-from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
@@ -70,7 +70,7 @@ def main (args) :
     optimiser = Adam()
     
     weights = np.ones((43,))
-    weights[38] = 1/60
+    weights[38] = 1/480
 
     # Loss Function Selector
 
@@ -85,8 +85,9 @@ def main (args) :
 
     # Callbacks
     # lrs_callback = LearningRateScheduler(learning_rate_scheduler)
+    reduce_lr_on_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.001)
 
-    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=1000, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[], model_position=50)
+    experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=1000, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[reduce_lr_on_plateau], model_position=50)
 
 if __name__ == "__main__":
     main(sys.argv)
