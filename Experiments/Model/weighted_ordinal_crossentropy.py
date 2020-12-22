@@ -26,7 +26,7 @@ def weighted_ordinal_crossentropy(weights):
         loss = y_true * K.log(y_pred) * weights
         loss = -K.sum(loss, -1)
         loss = (1.0 + K.exp(ord_weights)) * loss
-        # If you want to use linear weight, comment the line above and uncomment the line below.
+        # If you want to use linear ordinal weights, comment the line above and uncomment the line below.
         # loss = (1.0 + ord_weights) * loss
         return loss
     return ordinal_loss_exp
