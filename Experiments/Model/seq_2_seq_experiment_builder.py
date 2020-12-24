@@ -1,8 +1,8 @@
 import sys
 import numpy as np
 from tensorflow.keras import Input, Model
-from keras.layers import LSTM, Dense
-from keras.optimizers import RMSprop
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.optimizers import RMSprop
 from utilities import generate_training_statistic_file
 
 # Seq2Seq Model Experiment
