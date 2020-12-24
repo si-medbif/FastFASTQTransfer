@@ -67,7 +67,7 @@ def main (args) :
         Dense(90, activation='softmax'),
         Dense(43, activation='softmax'),
     ]
-    optimiser = Adam()
+    optimiser = Adam(learning_rate=0.001)
     
     weights = np.ones((43,))
     weights[38] = 1/480
@@ -85,7 +85,7 @@ def main (args) :
 
     # Callbacks
     # lrs_callback = LearningRateScheduler(learning_rate_scheduler)
-    reduce_lr_on_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.001)
+    reduce_lr_on_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=1e-10)
 
     experiment_builder(args[1], args[2], args[3], layers, n_row_per_chunk=1000, n_chunk=100, epoch=1000, optimiser=optimiser, loss=loss, experiment_name=args[4], callbacks=[reduce_lr_on_plateau], model_position=50)
 
