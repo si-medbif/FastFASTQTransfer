@@ -17,7 +17,7 @@ class Configuration :
         self.seq_num = seq_num
         self.seq_len = seq_len
 
-def generate_model (feature_file_path, configuration, training_hist_folder_path, model_path, experiment_name) :
+def generate_encoder_model (feature_file_path, configuration, training_hist_folder_path, model_path, experiment_name) :
     encoder_input_data = np.zeros((configuration.seq_num, configuration.seq_len, configuration.num_encoder_tokens), dtype='float32')
     decoder_input_data = np.zeros((configuration.seq_num, configuration.seq_len + 1, configuration.num_decoder_tokens), dtype='float32')
     decoder_target_data = np.zeros((configuration.seq_num, configuration.seq_len + 1, configuration.num_decoder_tokens), dtype='float32')
@@ -111,7 +111,7 @@ def main(args) :
     feature_file_path = args[1]
     configuration = Configuration(seq_num=300000)
 
-    generate_model(feature_file_path, configuration, args[2], args[3], args[4])
+    generate_encoder_model(feature_file_path, configuration, args[2], args[3], args[4])
 
 if __name__ == "__main__":
     main(sys.argv)
