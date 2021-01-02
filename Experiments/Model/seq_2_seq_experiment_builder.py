@@ -122,7 +122,7 @@ def convert2Q (seq) :
     res = [np.argmax(seq[i,:]) for i in range(seq.shape[0])]
     return res
 
-def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_model_path) :
+def convert_to_decoder_model (model, configuration, decoder_model_path) :
 
     # Load model from file if model path is specified : otherwise model instance is accquired
     if type(model) == str :
@@ -149,16 +149,19 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
         [decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states
     )
 
-    encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
+    decoder_model.save(decoder_model_path)
     
+    return decoder_model
+
+def predict_single_record (feature_file_path, decoder_model, configuration) :
+    
+    encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
     target = convert2Q(decoder_target_data[777,:,:])
 
-
-    # DECODE SEQUENCE STARTS HERE!
     decode_sequence_input_seq = encoder_input_data [777:777+1]
 
     # Encode the input as state vectors.
-    states_value = encoder_model.predict(decode_sequence_input_seq)
+    states_value = decoder_model.predict(decode_sequence_input_seq)
 
     # Generate empty target sequence of length 1.
     target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
@@ -180,7 +183,7 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
 
         # Exit condition: either hit max length
         # or find stop character.
-        if len(decoded_sentence) > 91:
+        if len(decoded_sentence) > configuration.seq_len + 1:
             stop_condition = True
 
         # Update the target sequence (of length 1).
@@ -191,9 +194,7 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
         states_value = [h, c]
 
     pred = decoded_sentence
-    diff_array = np.subtract(target[:90],pred[:90]) #This will be used for the final correction of Q-scores
-
-    decoder_model.save(decoder_model_path)
+    diff_array = np.subtract(target[:configuration.seq_len],pred[:configuration.seq_len]) #This will be used for the final correction of Q-scores
 
     return pred, diff_array
 
@@ -205,7 +206,8 @@ def main(args) :
     decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
-    pred, diff_array = convert_to_decoder_model (encoder_model,  feature_file_path, configuration, decoder_model_full_path) 
-
+    decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
+    predict_single_record(feature_file_path, decoder_model, configuration)
+    
 if __name__ == "__main__":
     main(sys.argv)
