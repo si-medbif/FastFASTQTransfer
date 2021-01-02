@@ -151,52 +151,69 @@ def convert_to_decoder_model (model, configuration, decoder_model_path) :
 
     decoder_model.save(decoder_model_path)
     
-    return decoder_model
+    return encoder_model, decoder_model
 
-def predict_single_record (feature_file_path, decoder_model, configuration) :
+def calculate_distance_from_predicted_result (actual, pred) :
+    sigma_distance = 0
+
+    for i in range(0,len(actual)) :
+        sigma_distance += (actual[i] - pred[i]) ** 2
+
+    return sigma_distance
+
+def predict_from_file (feature_file_path, encoder_model, decoder_model, configuration) :
     
     encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
-    target = convert2Q(decoder_target_data[777,:,:])
+    accum_sigma_distance = 0
 
-    decode_sequence_input_seq = encoder_input_data [777:777+1]
+    for data_index in range(0, len(decoder_target_data)) :
+        target = convert2Q(decoder_target_data[data_index,:,:])
 
-    # Encode the input as state vectors.
-    states_value = decoder_model.predict(decode_sequence_input_seq)
+        decode_sequence_input_seq = encoder_input_data [data_index:data_index+1]
 
-    # Generate empty target sequence of length 1.
-    target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
-    # Populate the first character of target sequence with the start character.
-    target_seq[0, 0, 40] = 1.0
+        # Encode the input as state vectors.
+        states_value = encoder_model.predict(decode_sequence_input_seq)
 
-    # Sampling loop for a batch of sequences
-    # (to simplify, here we assume a batch of size 1).
-    stop_condition = False
-    decoded_sentence =[]#= ""
-
-    while not stop_condition :
-        output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
-
-        # Sample a token
-        sampled_token_index = np.argmax(output_tokens[0, -1, :])
-        #sampled_char = reverse_target_char_index[sampled_token_index]
-        decoded_sentence.append(sampled_token_index) #+= sampled_char
-
-        # Exit condition: either hit max length
-        # or find stop character.
-        if len(decoded_sentence) > configuration.seq_len + 1:
-            stop_condition = True
-
-        # Update the target sequence (of length 1).
+        # Generate empty target sequence of length 1.
         target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
-        target_seq[0, 0, sampled_token_index] = 1.0
+        # Populate the first character of target sequence with the start character.
+        target_seq[0, 0, 40] = 1.0
 
-        # Update states
-        states_value = [h, c]
+        # Sampling loop for a batch of sequences
+        # (to simplify, here we assume a batch of size 1).
+        stop_condition = False
+        decoded_sentence =[]#= ""
 
-    pred = decoded_sentence
-    diff_array = np.subtract(target[:configuration.seq_len],pred[:configuration.seq_len]) #This will be used for the final correction of Q-scores
+        while not stop_condition :
+            output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
 
-    return pred, diff_array
+            # Sample a token
+            sampled_token_index = np.argmax(output_tokens[0, -1, :])
+            #sampled_char = reverse_target_char_index[sampled_token_index]
+            decoded_sentence.append(sampled_token_index) #+= sampled_char
+
+            # Exit condition: either hit max length
+            # or find stop character.
+            if len(decoded_sentence) > configuration.seq_len + 1:
+                stop_condition = True
+
+            # Update the target sequence (of length 1).
+            target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
+            target_seq[0, 0, sampled_token_index] = 1.0
+
+            # Update states
+            states_value = [h, c]
+
+        # pred = decoded_sentence
+        # diff_array = np.subtract(target[:configuration.seq_len],pred[:configuration.seq_len]) #This will be used for the final correction of Q-scores
+        accum_sigma_distance += calculate_distance_from_predicted_result(target[:configuration.seq_len], decoded_sentence[:configuration.seq_len])
+
+        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', (1/(data_index+1)) * accum_sigma_distance)
+
+    # Calculate Final MSE
+    mse = (1/configuration.seq_num) * accum_sigma_distance
+
+    return mse
 
 def main(args) :
     feature_file_path = args[1]
@@ -206,8 +223,10 @@ def main(args) :
     decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
-    decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
-    predict_single_record(feature_file_path, decoder_model, configuration)
+    encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
+    mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration)
+
+    print(mse)
     
 if __name__ == "__main__":
     main(sys.argv)
