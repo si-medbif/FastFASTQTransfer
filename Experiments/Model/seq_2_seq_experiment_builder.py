@@ -195,6 +195,8 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
 
     decoder_model.save(decoder_model_path)
 
+    return pred, diff_array
+
 def main(args) :
     feature_file_path = args[1]
     configuration = Configuration()
@@ -203,7 +205,7 @@ def main(args) :
     decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
-    convert_to_decoder_model (encoder_model,  feature_file_path, configuration, decoder_model_full_path) 
-
+    pred, diff_array = convert_to_decoder_model (encoder_model,  feature_file_path, configuration, decoder_model_full_path) 
+    
 if __name__ == "__main__":
     main(sys.argv)
