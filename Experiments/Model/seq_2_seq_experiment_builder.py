@@ -11,13 +11,15 @@ from utilities import generate_training_statistic_file
 # OUTPUT: History File, Model File
 
 class Configuration :
-    def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 100000, seq_len = 90, base_learning_rate=0.01) :
+    def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
         self.latent_dim = latent_dim
         self.num_encoder_tokens = num_encoder_tokens
         self.num_decoder_tokens = num_decoder_tokens
         self.seq_num = seq_num
         self.seq_len = seq_len
         self.base_learning_rate = base_learning_rate
+        self.batch_size = batch_size
+        self.loss = loss
 
 def load_data_from_file (feature_file_path, configuration) :
     encoder_input_data = np.zeros((configuration.seq_num, configuration.seq_len, configuration.num_encoder_tokens), dtype='float32')
@@ -79,12 +81,12 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
 
     #Train the model round 1
     model.compile(
-        optimizer=RMSprop(lr=configuration.base_learning_rate), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate), loss=configuration.loss, metrics=["accuracy"])
     
     training_hist = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
-        batch_size=10,
+        batch_size=configuration.batch_size,
         epochs=100
     )
     
@@ -93,21 +95,21 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
 
     #Train the model round 2
     model.compile(
-        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2), loss=configuration.loss, metrics=["accuracy"])
     model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
-        batch_size=10,
+        batch_size=configuration.batch_size,
         epochs=500
     )
 
     #Train the model round 3
     model.compile(
-        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2 * 0.2), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2 * 0.2), loss=configuration.loss, metrics=["accuracy"])
     model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
-        batch_size=10,
+        batch_size=configuration.batch_size,
         epochs=100
     )
 
@@ -195,7 +197,7 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
 
 def main(args) :
     feature_file_path = args[1]
-    configuration = Configuration(seq_num=300000)
+    configuration = Configuration()
 
     encoder_model_full_path = args[3] + '/' + args[4] + '_encoder.h5'
     decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
