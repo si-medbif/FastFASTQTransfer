@@ -113,13 +113,91 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     # Save Model
     model.save(model_path)        
 
+    return model
+
+def convert2Q (seq) :
+    res = [np.argmax(seq[i,:]) for i in range(seq.shape[0])]
+    return res
+
+def convert_to_decoder_model (model,  feature_file_path, configuration) :
+
+    # Load model from file if model path is specified : otherwise model instance is accquired
+    if type(model) == str :
+        model = load_model(model)
+
+    # Transform Model
+    encoder_inputs = model.input[0]
+    encoder_outputs, state_h_enc, state_c_enc = model.layers[2].output  # lstm_1
+    encoder_states = [state_h_enc, state_c_enc]
+    encoder_model = Model(encoder_inputs, encoder_states)
+
+    decoder_inputs = model.input[1]  # input_2
+    decoder_state_input_h = Input(shape=(configuration.latent_dim,), name="input_3")
+    decoder_state_input_c = Input(shape=(configuration.latent_dim,), name="input_4")
+    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+    decoder_lstm = model.layers[3]
+    decoder_outputs, state_h_dec, state_c_dec = decoder_lstm (
+        decoder_inputs, initial_state=decoder_states_inputs
+    )
+    decoder_states = [state_h_dec, state_c_dec]
+    decoder_dense = model.layers[4]
+    decoder_outputs = decoder_dense(decoder_outputs)
+    decoder_model = Model (
+        [decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states
+    )
+
+    encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
+    
+    target = convert2Q(decoder_target_data[777,:,:])
+
+
+    # DECODE SEQUENCE STARTS HERE!
+    decode_sequence_input_seq = encoder_input_data [777:777+1]
+
+    # Encode the input as state vectors.
+    states_value = encoder_model.predict(decode_sequence_input_seq)
+
+    # Generate empty target sequence of length 1.
+    target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
+    # Populate the first character of target sequence with the start character.
+    target_seq[0, 0, 40] = 1.0
+
+    # Sampling loop for a batch of sequences
+    # (to simplify, here we assume a batch of size 1).
+    stop_condition = False
+    decoded_sentence =[]#= ""
+
+    while not stop_condition :
+        output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
+
+        # Sample a token
+        sampled_token_index = np.argmax(output_tokens[0, -1, :])
+        #sampled_char = reverse_target_char_index[sampled_token_index]
+        decoded_sentence.append(sampled_token_index) #+= sampled_char
+
+        # Exit condition: either hit max length
+        # or find stop character.
+        if len(decoded_sentence) > 91:
+            stop_condition = True
+
+        # Update the target sequence (of length 1).
+        target_seq = np.zeros((1, 1, configuration.num_decoder_tokens))
+        target_seq[0, 0, sampled_token_index] = 1.0
+
+        # Update states
+        states_value = [h, c]
+
+    pred = decoded_sentence
+
+
 def main(args) :
     feature_file_path = args[1]
     configuration = Configuration(seq_num=300000)
 
     model_full_path = args[3] + '/' + args[4] + '.h5'
 
-    generate_encoder_model(feature_file_path, configuration, args[2], model_full_path, args[4])
+    encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], model_full_path, args[4])
+    convert_to_decoder_model (encoder_model,  feature_file_path, configuration) 
 
 if __name__ == "__main__":
     main(sys.argv)
