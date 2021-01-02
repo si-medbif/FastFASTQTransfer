@@ -120,7 +120,7 @@ def convert2Q (seq) :
     res = [np.argmax(seq[i,:]) for i in range(seq.shape[0])]
     return res
 
-def convert_to_decoder_model (model,  feature_file_path, configuration) :
+def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_model_path) :
 
     # Load model from file if model path is specified : otherwise model instance is accquired
     if type(model) == str :
@@ -189,16 +189,19 @@ def convert_to_decoder_model (model,  feature_file_path, configuration) :
         states_value = [h, c]
 
     pred = decoded_sentence
+    diff_array = np.subtract(target,pred[:90]) #This will be used for the final correction of Q-scores
 
+    decoder_model.save(decoder_model_path)
 
 def main(args) :
     feature_file_path = args[1]
     configuration = Configuration(seq_num=300000)
 
-    model_full_path = args[3] + '/' + args[4] + '.h5'
+    encoder_model_full_path = args[3] + '/' + args[4] + '_encoder.h5'
+    decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
 
-    encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], model_full_path, args[4])
-    convert_to_decoder_model (encoder_model,  feature_file_path, configuration) 
+    encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
+    convert_to_decoder_model (encoder_model,  feature_file_path, configuration, decoder_model_full_path) 
 
 if __name__ == "__main__":
     main(sys.argv)
