@@ -11,12 +11,13 @@ from utilities import generate_training_statistic_file
 # OUTPUT: History File, Model File
 
 class Configuration :
-    def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 100000, seq_len = 90) :
+    def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 100000, seq_len = 90, base_learning_rate=0.01) :
         self.latent_dim = latent_dim
         self.num_encoder_tokens = num_encoder_tokens
         self.num_decoder_tokens = num_decoder_tokens
         self.seq_num = seq_num
         self.seq_len = seq_len
+        self.base_learning_rate = base_learning_rate
 
 def load_data_from_file (feature_file_path, configuration) :
     encoder_input_data = np.zeros((configuration.seq_num, configuration.seq_len, configuration.num_encoder_tokens), dtype='float32')
@@ -78,7 +79,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
 
     #Train the model round 1
     model.compile(
-        optimizer=RMSprop(lr=0.01), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate), loss="categorical_crossentropy", metrics=["accuracy"])
     
     training_hist = model.fit(
         [encoder_input_data, decoder_input_data],
@@ -92,7 +93,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
 
     #Train the model round 2
     model.compile(
-        optimizer=RMSprop(lr=0.01 *0.2), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2), loss="categorical_crossentropy", metrics=["accuracy"])
     model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
@@ -102,7 +103,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
 
     #Train the model round 3
     model.compile(
-        optimizer=RMSprop(lr=0.01 *0.2 * 0.2), loss="categorical_crossentropy", metrics=["accuracy"])
+        optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2 * 0.2), loss="categorical_crossentropy", metrics=["accuracy"])
     model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
