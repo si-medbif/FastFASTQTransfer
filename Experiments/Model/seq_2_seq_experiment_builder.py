@@ -191,7 +191,7 @@ def convert_to_decoder_model (model,  feature_file_path, configuration, decoder_
         states_value = [h, c]
 
     pred = decoded_sentence
-    diff_array = np.subtract(target,pred[:90]) #This will be used for the final correction of Q-scores
+    diff_array = np.subtract(target[:90],pred[:90]) #This will be used for the final correction of Q-scores
 
     decoder_model.save(decoder_model_path)
 
@@ -206,6 +206,6 @@ def main(args) :
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
     pred, diff_array = convert_to_decoder_model (encoder_model,  feature_file_path, configuration, decoder_model_full_path) 
-    
+
 if __name__ == "__main__":
     main(sys.argv)
