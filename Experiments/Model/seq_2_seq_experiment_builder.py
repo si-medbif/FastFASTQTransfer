@@ -105,13 +105,15 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
         )
 
         # Save Model
-        model.save(model_path + '/' + experiment_name + '.h5')        
+        model.save(model_path)        
 
 def main(args) :
     feature_file_path = args[1]
     configuration = Configuration(seq_num=300000)
 
-    generate_encoder_model(feature_file_path, configuration, args[2], args[3], args[4])
+    model_full_path = args[3] + '/' + args[4] + '.h5'
+    
+    generate_encoder_model(feature_file_path, configuration, args[2], model_full_path, args[4])
 
 if __name__ == "__main__":
     main(sys.argv)
