@@ -233,8 +233,8 @@ def main(args) :
 
     configuration = Configuration()
 
-    encoder_model_full_path = model_path + '/' + args[4] + '_encoder.h5'
-    decoder_model_full_path = model_path + '/' + args[4] + '_decoder.h5'
+    encoder_model_full_path = model_path + '/' + experiment_name + '_encoder.h5'
+    decoder_model_full_path = model_path + '/' + experiment_name + '_decoder.h5'
     array_diff_full_file_name = array_diff_path + '/' + experiment_name + '.diff'
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
