@@ -92,7 +92,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     )
     
     # Save Training Stat
-    generate_training_statistic_file(training_hist, experiment_name + '_1', destination_file_path = training_hist_folder_path)
+    generate_training_statistic_file(training_hist, configuration.experiment_name + '_1', destination_file_path = training_hist_folder_path)
 
     #Train the model round 2
     model.compile(
@@ -167,7 +167,7 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
     encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
 
     # TEMP: COLLECT PROGRESS MSE
-    temp_mse_progress_file = open('mse_progression_l512_2-3', 'w')
+    temp_mse_progress_file = open(configuration.experiment_name + '_MSE.csv', 'w')
 
     accum_sigma_distance = 0
 
