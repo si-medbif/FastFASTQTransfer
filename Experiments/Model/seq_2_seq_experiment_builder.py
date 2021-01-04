@@ -11,7 +11,8 @@ from utilities import generate_training_statistic_file
 # OUTPUT: History File, Model File, Array Diff Result
 
 class Configuration :
-    def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
+    def __init__ (self, experiment_name, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
+        self.experiment_name = experiment_name
         self.latent_dim = latent_dim
         self.num_encoder_tokens = num_encoder_tokens
         self.num_decoder_tokens = num_decoder_tokens
@@ -166,7 +167,7 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
     encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
 
     # TEMP: COLLECT PROGRESS MSE
-    temp_mse_progress_file = open('mse_progression.csv', 'w')
+    temp_mse_progress_file = open('mse_progression_l512_2-3', 'w')
 
     accum_sigma_distance = 0
 
@@ -243,7 +244,8 @@ def main(args) :
     experiment_name = args[5]
 
     configuration = Configuration(
-        latent_dim=1024,
+        experiment_name = experiment_name,
+        latent_dim=512,
         base_learning_rate=0.001
     )
 
@@ -253,7 +255,7 @@ def main(args) :
 
     # encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
 
-    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS100_10000_encoder.h5'
+    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L512_Lr0-001_BS100_10000_encoder.h5'
     encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name)
 
