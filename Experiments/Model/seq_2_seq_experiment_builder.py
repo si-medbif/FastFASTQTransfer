@@ -7,8 +7,8 @@ from tensorflow.keras.models import load_model
 from utilities import generate_training_statistic_file
 
 # Seq2Seq Model Experiment
-# INPUT: Feature File Path, Destination Hist Path, Model Path, Experiment Name
-# OUTPUT: History File, Model File
+# INPUT: Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
+# OUTPUT: History File, Model File, Array Diff Result
 
 class Configuration :
     def __init__ (self, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
@@ -161,10 +161,12 @@ def calculate_distance_from_predicted_result (actual, pred) :
 
     return sigma_distance
 
-def predict_from_file (feature_file_path, encoder_model, decoder_model, configuration) :
+def predict_from_file (feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_path) :
     
     encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
     accum_sigma_distance = 0
+
+    diff_result_file = open(array_diff_full_path, 'w')
 
     for data_index in range(0, len(decoder_target_data)) :
         target = convert2Q(decoder_target_data[data_index,:,:])
@@ -204,11 +206,16 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
             # Update states
             states_value = [h, c]
 
-        # pred = decoded_sentence
-        # diff_array = np.subtract(target[:configuration.seq_len],pred[:configuration.seq_len]) #This will be used for the final correction of Q-scores
+        # Calcualte diff and write to file
+        diff_array = np.subtract(target[:configuration.seq_len],decoded_sentence[:configuration.seq_len]) #This will be used for the final correction of Q-scores
+        diff_result_file.write(str(diff_array.tolist())[1:-1].replace(' ', '') + '\n')
+        
         accum_sigma_distance += calculate_distance_from_predicted_result(target[:configuration.seq_len], decoded_sentence[:configuration.seq_len])
 
         print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', (1/(data_index+1)) * accum_sigma_distance)
+
+    # Close result file
+    diff_result_file.close()
 
     # Calculate Final MSE
     mse = (1/configuration.seq_num) * accum_sigma_distance
@@ -216,15 +223,23 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
     return mse
 
 def main(args) :
+    # Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
+
     feature_file_path = args[1]
+    destination_training_hist_path = args[2]
+    model_path = args[3]
+    array_diff_path = args[4]
+    experiment_name = args[5]
+
     configuration = Configuration()
 
-    encoder_model_full_path = args[3] + '/' + args[4] + '_encoder.h5'
-    decoder_model_full_path = args[3] + '/' + args[4] + '_decoder.h5'
+    encoder_model_full_path = model_path + '/' + args[4] + '_encoder.h5'
+    decoder_model_full_path = model_path + '/' + args[4] + '_decoder.h5'
+    array_diff_full_file_name = array_diff_path + '/' + experiment_name + '.diff'
 
-    encoder_model = generate_encoder_model(feature_file_path, configuration, args[2], encoder_model_full_path, args[4])
+    encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
     encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
-    mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration)
+    mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name)
 
     print(mse)
     
