@@ -164,6 +164,10 @@ def calculate_distance_from_predicted_result (actual, pred) :
 def predict_from_file (feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_path) :
     
     encoder_input_data, decoder_input_data, decoder_target_data = load_data_from_file(feature_file_path, configuration)
+
+    # TEMP: COLLECT PROGRESS MSE
+    temp_mse_progress_file = open('mse_progression.csv', 'w')
+
     accum_sigma_distance = 0
 
     diff_result_file = open(array_diff_full_path, 'w')
@@ -212,10 +216,17 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
         
         accum_sigma_distance += calculate_distance_from_predicted_result(target[:configuration.seq_len], decoded_sentence[:configuration.seq_len])
 
-        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', (1/(data_index+1)) * accum_sigma_distance)
+        current_mse = (1/(data_index+1)) * accum_sigma_distance
+
+        # TEMP: COLLECT PROGRESS MSE
+        temp_mse_progress_file.write(str(current_mse) + '\n')
+
+        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', current_mse)
 
     # Close result file
     diff_result_file.close()
+
+    temp_mse_progress_file.close()
 
     # Calculate Final MSE
     mse = (1/configuration.seq_num) * accum_sigma_distance
@@ -231,13 +242,18 @@ def main(args) :
     array_diff_path = args[4]
     experiment_name = args[5]
 
-    configuration = Configuration()
+    configuration = Configuration(
+        latent_dim=1024,
+        base_learning_rate=0.001
+    )
 
-    encoder_model_full_path = model_path + '/' + args[4] + '_encoder.h5'
-    decoder_model_full_path = model_path + '/' + args[4] + '_decoder.h5'
+    encoder_model_full_path = model_path + '/' + experiment_name + '_encoder.h5'
+    decoder_model_full_path = model_path + '/' + experiment_name + '_decoder.h5'
     array_diff_full_file_name = array_diff_path + '/' + experiment_name + '.diff'
 
-    encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
+    # encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
+
+    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS100_10000_encoder.h5'
     encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name)
 
