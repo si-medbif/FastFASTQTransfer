@@ -222,7 +222,7 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
         
         accum_sigma_distance += calculate_distance_from_predicted_result(target[:configuration.seq_len], decoded_sentence[:configuration.seq_len])
 
-        current_mse = (1/(data_index+1)) * accum_sigma_distance
+        current_mse = (1/(data_index+1 * configuration.seq_len)) * accum_sigma_distance
 
         mse_progress_file.write(str(current_mse) + '\n')
 
@@ -232,7 +232,7 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
     diff_result_file.close()
 
     # Calculate Final MSE
-    mse = (1/configuration.seq_num) * accum_sigma_distance
+    mse = (1/configuration.seq_num * configuration.seq_len) * accum_sigma_distance
 
     mse_progress_file.write(str(mse) + '\n')
     mse_progress_file.close()
