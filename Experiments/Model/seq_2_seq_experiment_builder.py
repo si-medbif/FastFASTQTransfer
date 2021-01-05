@@ -260,7 +260,7 @@ def main(args) :
     encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
 
-    print(mse)
+    print(configuration.experiment_name, mse)
     
 if __name__ == "__main__":
     main(sys.argv)
