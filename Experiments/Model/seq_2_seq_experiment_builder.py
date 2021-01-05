@@ -231,13 +231,7 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
     # Close result file
     diff_result_file.close()
 
-    # Calculate Final MSE
-    mse = (1/configuration.seq_num * configuration.seq_len) * accum_sigma_distance
-
-    mse_progress_file.write(str(mse) + '\n')
-    mse_progress_file.close()
-
-    return mse
+    return current_mse
 
 def main(args) :
     # Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
