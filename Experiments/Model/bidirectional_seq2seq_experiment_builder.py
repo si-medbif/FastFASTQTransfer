@@ -87,7 +87,7 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     callbacks=[reduce_lr,earlystop_callback]
     )
 
-    generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_folder_path)
+    generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_path)
 
 def main(args) :
     feature_file = args[1]
