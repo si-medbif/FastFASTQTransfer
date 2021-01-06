@@ -1,3 +1,5 @@
+import math
+
 # Configuration Class
 # Store the model configuration for each experiment
 
@@ -13,3 +15,4 @@ class Configuration :
         self.base_learning_rate = base_learning_rate
         self.batch_size = batch_size
         self.loss = loss
+        self.count_train = math.ceil(self.seq_num / self.batch_size)
