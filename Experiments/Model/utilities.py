@@ -33,3 +33,9 @@ def plot_loss_acc_to_file (training_history, experiment_name, loss_chart_path='.
     plt.clf()
     plt.cla()
     plt.close()
+
+def encode_base(base,base_dict = {"N":0,"A":1,"T":2,"C":3,"G":4}):
+  return base_dict[base.upper()]
+
+def quality_char_to_num(ascii):
+  return ord(ascii) - 33
