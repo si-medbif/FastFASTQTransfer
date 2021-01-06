@@ -5,22 +5,11 @@ from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.models import load_model
 from utilities import generate_training_statistic_file
+from Configuration import Configuration
 
 # Seq2Seq Model Experiment
 # INPUT: Feature File Path, Destination Hist Path, Model Path, Array Diff Path, MSE Progress File, Experiment Name
 # OUTPUT: History File, Model File, Array Diff Result
-
-class Configuration :
-    def __init__ (self, experiment_name, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
-        self.experiment_name = experiment_name
-        self.latent_dim = latent_dim
-        self.num_encoder_tokens = num_encoder_tokens
-        self.num_decoder_tokens = num_decoder_tokens
-        self.seq_num = seq_num
-        self.seq_len = seq_len
-        self.base_learning_rate = base_learning_rate
-        self.batch_size = batch_size
-        self.loss = loss
 
 def load_data_from_file (feature_file_path, configuration) :
     encoder_input_data = np.zeros((configuration.seq_num, configuration.seq_len, configuration.num_encoder_tokens), dtype='float32')
@@ -246,6 +235,7 @@ def main(args) :
     configuration = Configuration(
         experiment_name = experiment_name,
         latent_dim=1024,
+        batch_size=10,
         base_learning_rate=0.001
     )
 
@@ -256,7 +246,7 @@ def main(args) :
 
     # encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
 
-    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS1000_10000_encoder.h5'
+    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
     encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
 
