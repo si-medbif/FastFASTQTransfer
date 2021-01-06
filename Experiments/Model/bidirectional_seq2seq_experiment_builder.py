@@ -93,14 +93,17 @@ def main(args) :
     feature_file = args[1]
     training_hist_path = args[2]
     model_path = args[3]
-    mse_progress = args[4]
-    experiment_name = args[5]
+    predicted_diff_path = args[4]
+    mse_progress = args[5]
+    experiment_name = args[6]
+
+    print("Experiment Name", experiment_name)
 
     model_full_path = model_path + '/' + experiment_name + '.h5'
 
 
     configuration = Configuration(
-        experiment_name = args[5],
+        experiment_name = experiment_name,
         latent_dim=32,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
