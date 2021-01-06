@@ -86,7 +86,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     #Train the model round 2
     model.compile(
         optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2), loss=configuration.loss, metrics=["accuracy"])
-    model.fit(
+    training_hist = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
         batch_size=configuration.batch_size,
@@ -99,7 +99,7 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     #Train the model round 3
     model.compile(
         optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2 * 0.2), loss=configuration.loss, metrics=["accuracy"])
-    model.fit(
+    training_hist = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
         batch_size=configuration.batch_size,
