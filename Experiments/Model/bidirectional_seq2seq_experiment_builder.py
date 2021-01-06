@@ -47,7 +47,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
 
     return encoder_input_data, decoder_input_data, decoder_target_data
 
-def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
+def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
     
     # Encoder
     encoder_inputs = Input(shape=(configuration.seq_len + 1,))
@@ -75,17 +75,19 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
 
     model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
-    # model.summary()
     reduce_lr = WarmUpReduceLROnPlateau(monitor='loss', factor=0.2, patience=5, min_lr=0, init_lr = configuration.base_learning_rate, warmup_batches = configuration.count_train * 5, min_delta = 0.001)
     earlystop_callback = EarlyStopping(monitor='loss', min_delta=0.00001, patience=16)
     model.compile(optimizer=RMSprop(lr=configuration.base_learning_rate), loss="categorical_crossentropy", metrics=["accuracy","mse"])
-    model.fit(
+    
+    training_hist = model.fit(
     [encoder_input_data, decoder_input_data],
     decoder_target_data,
     batch_size=configuration.batch_size,
     epochs=1000,
     callbacks=[reduce_lr,earlystop_callback]
     )
+
+    generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_folder_path)
 
 def main(args) :
     feature_file = args[1]
@@ -112,7 +114,7 @@ def main(args) :
     )
 
     encoder_input_data, decoder_input_data, decoder_target_data = load_data(feature_file, configuration)
-    build_bidirectional_seq2seq_model(configuration, model_full_path, encoder_input_data, decoder_input_data, decoder_target_data)
+    build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
 
 if __name__ == "__main__":
     main(sys.argv)
