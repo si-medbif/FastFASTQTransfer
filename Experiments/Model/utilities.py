@@ -39,3 +39,17 @@ def encode_base(base,base_dict = {"N":0,"A":1,"T":2,"C":3,"G":4}):
 
 def quality_char_to_num(ascii):
   return ord(ascii) - 33
+
+def calculate_accuracy (pred : list, actual: list) :
+  if len(pred) != len(actual) :
+    print('No of Actual and Predicted did not match.')
+    return -1
+
+  no_of_item = len(pred)
+  no_of_corrent = 0
+
+  for i in range(0, no_of_item) :
+    if pred[i] == actual[i] :
+      no_of_corrent += 1
+  
+  return no_of_corrent/no_of_item
