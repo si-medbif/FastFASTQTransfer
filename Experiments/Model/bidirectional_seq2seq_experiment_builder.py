@@ -50,7 +50,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
 def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
     
     # Encoder
-    encoder_inputs = Input(shape=(configuration.seq_len + 1,))
+    encoder_inputs = Input(shape=(None,))
     encoder_embed = Embedding(output_dim=configuration.num_encoder_embed, input_dim=configuration.num_encoder_tokens)
     encoder = Bidirectional(LSTM(configuration.latent_dim, return_sequences=True, return_state=True))
     encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_embed(encoder_inputs))
@@ -59,7 +59,7 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     encoder_states = [state_h, state_c]
 
     # Decoder
-    decoder_inputs = Input(shape=(configuration.seq_len + 1, ))
+    decoder_inputs = Input(shape=(None, ))
     decoder_embed = Embedding(output_dim=configuration.num_decoder_embed, input_dim=configuration.num_decoder_tokens)  
     decoder_lstm = LSTM(configuration.latent_dim*2, return_sequences=True, return_state=True)
     decoder_outputs,_,_= decoder_lstm(decoder_embed(decoder_inputs), initial_state=encoder_states)
@@ -88,6 +88,8 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     )
 
     generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_path)
+
+    model.save(model_full_path)
 
 def main(args) :
     feature_file = args[1]
