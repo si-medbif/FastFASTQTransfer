@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import to_categorical
 
-from utilities import generate_training_statistic_file, encode_base, quality_char_to_num
+from utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy
 from Configuration import Configuration
 from CustomCallbacks import WarmUpReduceLROnPlateau
 
@@ -20,6 +20,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
     encoder_input_data = []
     decoder_input_data = []
     decoder_target_data = []
+    raw_score_data = []
 
     data_counter = 0
 
@@ -35,7 +36,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
             raw_scores = line_items[no_of_features:]
             decoder_input_data.append([41] + raw_scores)
             decoder_target_data.append(to_categorical(raw_scores + [41], num_classes= 42))
-
+            raw_score_data.append([int(item) for item in raw_scores])
             data_counter += 1
 
             if data_counter == configuration.seq_num :
@@ -45,7 +46,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
     decoder_input_data = np.array(decoder_input_data,dtype="float32")
     decoder_target_data = np.array(decoder_target_data,dtype="float32")
 
-    return encoder_input_data, decoder_input_data, decoder_target_data
+    return encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data
 
 def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
     
@@ -171,8 +172,9 @@ def main(args) :
         loss='categorical_crossentropy'
     )
 
-    encoder_input_data, decoder_input_data, decoder_target_data = load_data(feature_file, configuration)
-    build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
-
+    encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_data(feature_file, configuration)
+    # build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
+    predicted = predict_bidirectional_seq2seq_qscore_set(model_full_path, configuration, encoder_input_data, decoder_input_data)
+    
 if __name__ == "__main__":
     main(sys.argv)
