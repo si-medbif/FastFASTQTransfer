@@ -8,6 +8,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import to_categorical
 
+from typing import Any
 from utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy
 from Configuration import Configuration
 from CustomCallbacks import WarmUpReduceLROnPlateau
@@ -145,6 +146,53 @@ def transform_model (full_model, configuration: Configuration) -> (Model,Model) 
 
     return encoder_model, decoder_model
 
+def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, decoder_target_data: Any, encoder_model : Model, decoder_model: Model, configuration: Configuration) -> list:
+    # TODO Calculate MSE between actual and prediced
+    score_list_storage = [] 
+
+    for data_index in range(0, len(encoder_input_data)) :
+        
+        # Current Read
+        current_encoder_input_data = encoder_input_data[data_index]
+
+        # Init Previous State with Starting Symbol
+        previous_decoder_state = np.zeros((1, configuration.num_decoder_tokens))
+        previous_decoder_state[0,configuration.num_decoder_tokens-1] = 1.0
+
+        # Get Encoder Result
+        encoder_result = encoder_model.predict(np.array(current_encoder_input_data).reshape(1,91))
+
+        # Extract encoder_output, h_state (bck[1,1,32],fwd[1,1,32] -> merge together), c_state (bck[1,1,32],fwd[1,1,32] -> merge together)
+        # FIXME WARNING:tensorflow:Model was constructed with shape (None, 64) for input Tensor("encoder_output:0", shape=(None, 64), dtype=float32), but it was called on an input with incompatible shape (None, 42, 64).
+        encoder_output = encoder_result[0]
+        state_h = np.array(encoder_result[1]).reshape(1,64)
+        state_c = np.array(encoder_result[2]).reshape(1,64)
+
+        # Storing Decoded Sequence
+        decoded_sequence = []
+
+        while len(decoded_sequence) < configuration.seq_len :
+            # Decode the symbol by plugging encoder result with previous state
+            decoder_output, state_h, state_c = decoder_model.predict([encoder_output[0,:configuration.num_decoder_tokens,:].reshape(1,configuration.num_decoder_tokens,configuration.latent_dim*2), previous_decoder_state, state_h, state_c])
+
+            # Decoded Symbol
+            current_decoded_symbol = np.argmax(decoder_output[0, -1, :])
+            decoded_sequence.append(current_decoded_symbol)
+
+            # Baking 🍞 new previous target for the next round
+            previous_decoder_state = np.zeros((1, configuration.num_decoder_tokens))
+            previous_decoder_state[0,current_decoded_symbol] = 1.0
+
+        # FIXME Maybe incorrct sequence was predicted
+        score_list_storage.append(decoded_sequence)
+
+        # DEBUG Showing Current Sequence
+        print(decoded_sequence)
+
+        # TODO Store MSE for each iteration
+    
+    return score_list_storage
+
 def main(args) :
     feature_file = args[1]
     training_hist_path = args[2]
@@ -172,9 +220,17 @@ def main(args) :
         loss='categorical_crossentropy'
     )
 
+    # Load Dataset
     encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_data(feature_file, configuration)
-    # build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
-    predicted = predict_bidirectional_seq2seq_qscore_set(model_full_path, configuration, encoder_input_data, decoder_input_data)
+
+    # Build Full Model
+    # build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)   
+
+    # Transform full model to encoder and decoder model
+    encoder_model, decoder_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_L32_E32_Lr0-001_BSm00-1_10000.h5', configuration)
+
+    # Predict data
+    pred = predict_bidirectional_seq2seq_qscore_set(encoder_input_data, decoder_target_data, encoder_model, decoder_model, configuration)
     
 if __name__ == "__main__":
     main(sys.argv)
