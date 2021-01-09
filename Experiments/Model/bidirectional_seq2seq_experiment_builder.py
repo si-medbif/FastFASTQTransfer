@@ -50,7 +50,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
 def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
     
     # Encoder
-    encoder_inputs = Input(shape=(configuration.seq_len + 1,))
+    encoder_inputs = Input(shape=(None,))
     encoder_embed = Embedding(output_dim=configuration.num_encoder_embed, input_dim=configuration.num_encoder_tokens)
     encoder = Bidirectional(LSTM(configuration.latent_dim, return_sequences=True, return_state=True))
     encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_embed(encoder_inputs))
@@ -59,7 +59,7 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     encoder_states = [state_h, state_c]
 
     # Decoder
-    decoder_inputs = Input(shape=(configuration.seq_len + 1, ))
+    decoder_inputs = Input(shape=(None, ))
     decoder_embed = Embedding(output_dim=configuration.num_decoder_embed, input_dim=configuration.num_decoder_tokens)  
     decoder_lstm = LSTM(configuration.latent_dim*2, return_sequences=True, return_state=True)
     decoder_outputs,_,_= decoder_lstm(decoder_embed(decoder_inputs), initial_state=encoder_states)
@@ -88,6 +88,61 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     )
 
     generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_path)
+
+def transform_model (full_model, configuration: Configuration) -> (Model,Model) :
+    if type(full_model) == str :
+        full_model = load_model(full_model)
+    
+    # Encoder Model
+    encoder_input = full_model.inputs[0]
+    encoder_embedded = full_model.get_layer('embedding')
+    encoder_embedded_output = encoder_embedded.output
+    encoder_lstm = full_model.get_layer('bidirectional')
+    encoder_output,fwd_h,bck_h,fwd_c,bck_c = encoder_lstm(encoder_embedded.output)
+
+    state_h = [bck_h, fwd_h]
+    state_c = [bck_c, fwd_c]
+    encoder_states = [state_h, state_c]
+
+    encoder_model = Model(encoder_input, [encoder_output] + encoder_states)
+
+    # Decoder Model
+    
+    # Previous State of from Decoder
+    decoder_input = full_model.inputs[1]
+
+    # Plug decoder_input to Decoder Embedded
+    decoder_embedding = full_model.get_layer('embedding_1')
+    decoder_embedding_result = decoder_embedding(decoder_input)
+
+    # Result from Encoder
+    encoder_output = Input(shape=(configuration.latent_dim*2,), name='encoder_output')
+
+    # H and C State from Encoder
+    decoder_state_input_h = Input(shape=(configuration.latent_dim*2,), name='decoder_h')
+    decoder_state_input_c = Input(shape=(configuration.latent_dim*2,), name='decoder_c')
+    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+
+    print(decoder_input.name, decoder_state_input_h.name, decoder_state_input_c.name)
+
+    decoder_lstm = full_model.get_layer('lstm_1')
+
+    decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_embedding_result, initial_state=decoder_states_inputs)
+    decoder_state_output = [decoder_state_h, decoder_state_c]
+
+    # Attention Layer
+    decoder_attention = full_model.get_layer('attention')
+    decoder_attention_output = decoder_attention([encoder_output, decoder_outputs])
+
+    decoder_concat = full_model.get_layer('concat_layer')
+    concat_result = decoder_concat([decoder_outputs, decoder_attention_output])
+
+    decoder_dense = full_model.get_layer('dense')
+    decoder_dense_result = decoder_dense(concat_result)
+
+    decoder_model = Model([encoder_output, decoder_input] + decoder_states_inputs, [decoder_dense_result] + decoder_state_output)
+
+    return encoder_model, decoder_model
 
 def main(args) :
     feature_file = args[1]
