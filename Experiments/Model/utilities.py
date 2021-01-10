@@ -39,6 +39,14 @@ def encode_base(base,base_dict = {"N":0,"A":1,"T":2,"C":3,"G":4}):
 
 def quality_char_to_num(ascii):
   return ord(ascii) - 33
+  
+def calculate_distance_from_predicted_result (actual, pred) :
+    sigma_distance = 0
+
+    for i in range(0,len(actual)) :
+        sigma_distance += (actual[i] - pred[i]) ** 2
+
+    return sigma_distance
 
 def calculate_accuracy (pred : list, actual: list) :
   if len(pred) != len(actual) :

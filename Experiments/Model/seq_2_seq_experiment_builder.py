@@ -4,7 +4,7 @@ from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.models import load_model
-from utilities import generate_training_statistic_file
+from utilities import generate_training_statistic_file, calculate_distance_from_predicted_result
 from Configuration import Configuration
 
 # Seq2Seq Model Experiment
@@ -148,14 +148,6 @@ def convert_to_decoder_model (model, configuration, decoder_model_path) :
     decoder_model.save(decoder_model_path)
     
     return encoder_model, decoder_model
-
-def calculate_distance_from_predicted_result (actual, pred) :
-    sigma_distance = 0
-
-    for i in range(0,len(actual)) :
-        sigma_distance += (actual[i] - pred[i]) ** 2
-
-    return sigma_distance
 
 def predict_from_file (feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_path, mse_log_full_path) :
     
