@@ -9,9 +9,9 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import to_categorical
 
 from typing import Any
-from Experiments.Model.utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy
-from Experiments.Model.Configuration import Configuration
-from Experiments.Model.CustomCallbacks import WarmUpReduceLROnPlateau
+from utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy
+from Configuration import Configuration
+from CustomCallbacks import WarmUpReduceLROnPlateau
 
 
 # Bidirectional LSTM Seq2Seq Model Experiment
