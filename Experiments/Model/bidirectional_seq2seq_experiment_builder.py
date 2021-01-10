@@ -3,7 +3,7 @@ import numpy as np
 
 from tensorflow.keras import Input, Model
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import LSTM, Dense, Embedding, Bidirectional, Concatenate, Attention
+from tensorflow.keras.layers import LSTM, Dense, Embedding, Bidirectional, Concatenate, Attention, TimeDistributed
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import to_categorical
@@ -50,7 +50,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
 
     return encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data
 
-def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) :
+def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) -> Model :
     
     # Encoder
     encoder_inputs = Input(shape=(None,))
@@ -73,7 +73,7 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     # Concat attention input and decoder LSTM output
     decoder_concat_input = Concatenate(axis=-1, name='concat_layer')([decoder_outputs, attn_out])
     
-    decoder_dense = Dense(configuration.num_decoder_tokens, activation="softmax")
+    decoder_dense = TimeDistributed(Dense(configuration.num_decoder_tokens, activation="softmax"))
     decoder_outputs = decoder_dense(decoder_concat_input)
 
     model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
@@ -91,6 +91,8 @@ def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_
     )
 
     generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_path)
+
+    return model
 
 def transform_model (full_model, configuration: Configuration) -> (Model,Model) :
     if type(full_model) == str :
@@ -140,7 +142,7 @@ def transform_model (full_model, configuration: Configuration) -> (Model,Model) 
     decoder_concat = full_model.get_layer('concat_layer')
     concat_result = decoder_concat([decoder_outputs, decoder_attention_output])
 
-    decoder_dense = full_model.get_layer('dense')
+    decoder_dense = full_model.get_layer('time_distributed')
     decoder_dense_result = decoder_dense(concat_result)
 
     decoder_model = Model([encoder_output, decoder_input] + decoder_states_inputs, [decoder_dense_result] + decoder_state_output)
@@ -172,7 +174,7 @@ def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, decoder_
         # Storing Decoded Sequence
         decoded_sequence = []
 
-        while len(decoded_sequence) < configuration.seq_len :
+        while len(decoded_sequence) < configuration.seq_len + 1 :
             # Decode the symbol by plugging encoder result with previous state
             decoder_output, state_h, state_c = decoder_model.predict([encoder_output[0,:configuration.num_decoder_tokens,:].reshape(1,configuration.num_decoder_tokens,configuration.latent_dim*2), previous_decoder_state, state_h, state_c])
 
@@ -225,7 +227,8 @@ def main(args) :
     encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_data(feature_file, configuration)
 
     # Build Full Model
-    # build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)   
+    full_model = build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
+    full_model.save(model_full_path)
 
     # Transform full model to encoder and decoder model
     encoder_model, decoder_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_L32_E32_Lr0-001_BSm00-1_10000.h5', configuration)
