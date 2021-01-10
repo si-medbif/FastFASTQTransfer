@@ -1,10 +1,13 @@
 import sys
 import numpy as np
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.models import load_model
-from utilities import generate_training_statistic_file, calculate_distance_from_predicted_result
+from utilities import generate_training_statistic_file, calculate_distance_from_predicted_result, offset_distribution_finder
 from Configuration import Configuration
 
 # Seq2Seq Model Experiment
@@ -214,6 +217,25 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
 
     return current_mse
 
+def plot_diff_distribution (diff_file_path, experiment_name:str, configuration: Configuration) :
+    diff_dist, no_of_read, no_of_item = offset_distribution_finder(diff_file_path)
+
+    # Normalise into percentage
+    diff_list = list()
+    percentages_list = list()
+    
+    for diff in diff_dist.keys() :
+        if diff == 0:
+            continue
+        diff_list.append(diff)
+        percentages_list.append(diff_dist[diff]/ no_of_item * 100)
+    
+    diff_dist_percentage = pd.DataFrame({'Offset': diff_list, 'Percentage' : percentages_list}).sort_values(by=['Offset'])
+    
+    sns.barplot(data=diff_dist_percentage, x='Offset', y='Percentage')
+    plt.title('Prediction offset ' + experiment_name + ' (' + str(configuration.seq_num) + ' reads)')
+    plt.show()
+
 def main(args) :
     # Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
 
@@ -238,11 +260,10 @@ def main(args) :
 
     # encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
 
-    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
-    encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
-    mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
-
-    print(configuration.experiment_name, mse)
+    # encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
+    # encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
+    # mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
+    plot_diff_distribution(array_diff_full_file_name, experiment_name, configuration)
     
 if __name__ == "__main__":
     main(sys.argv)
