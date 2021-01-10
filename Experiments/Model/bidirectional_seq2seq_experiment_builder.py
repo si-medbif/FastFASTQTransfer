@@ -9,7 +9,7 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import to_categorical
 
 from typing import Any
-from utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy
+from utilities import generate_training_statistic_file, encode_base, quality_char_to_num, calculate_accuracy, calculate_distance_from_predicted_result
 from Configuration import Configuration
 from CustomCallbacks import WarmUpReduceLROnPlateau
 
@@ -53,7 +53,7 @@ def load_data (feature_file_path: str, configuration: Configuration) :
 def build_bidirectional_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) -> Model :
     
     # Encoder
-    encoder_inputs = Input(shape=(None,))
+    encoder_inputs = Input(shape=(configuration.seq_len+1,))
     encoder_embed = Embedding(output_dim=configuration.num_encoder_embed, input_dim=configuration.num_encoder_tokens)
     encoder = Bidirectional(LSTM(configuration.latent_dim, return_sequences=True, return_state=True))
     encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_embed(encoder_inputs))
@@ -128,8 +128,6 @@ def transform_model (full_model, configuration: Configuration) -> (Model,Model) 
     decoder_state_input_c = Input(shape=(configuration.latent_dim*2,), name='decoder_c')
     decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
 
-    print(decoder_input.name, decoder_state_input_h.name, decoder_state_input_c.name)
-
     decoder_lstm = full_model.get_layer('lstm_1')
 
     decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_embedding_result, initial_state=decoder_states_inputs)
@@ -145,12 +143,18 @@ def transform_model (full_model, configuration: Configuration) -> (Model,Model) 
     decoder_dense = full_model.get_layer('time_distributed')
     decoder_dense_result = decoder_dense(concat_result)
 
-    decoder_model = Model([encoder_output, decoder_input] + decoder_states_inputs, [decoder_dense_result] + decoder_state_output)
-
+    decoder_model = Model([decoder_input] + [encoder_output, decoder_state_input_h, decoder_state_input_c], [decoder_dense_result] + decoder_state_output)
     return encoder_model, decoder_model
 
-def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, decoder_target_data: Any, encoder_model : Model, decoder_model: Model, configuration: Configuration) -> list:
-    # TODO Calculate MSE between actual and prediced
+def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, raw_score_data: Any, encoder_model : Model, decoder_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str) -> list:
+    
+    # Open mse progress file to write
+    mse_progress_file = open(mse_log_full_path, 'w')
+    accum_sigma_distance = 0
+
+    # Open array diff progress file to write
+    diff_result_file = open(array_diff_full_path, 'w')
+
     score_list_storage = [] 
 
     for data_index in range(0, len(encoder_input_data)) :
@@ -159,8 +163,8 @@ def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, decoder_
         current_encoder_input_data = encoder_input_data[data_index]
 
         # Init Previous State with Starting Symbol
-        previous_decoder_state = np.zeros((1, configuration.num_decoder_tokens))
-        previous_decoder_state[0,configuration.num_decoder_tokens-1] = 1.0
+        previous_decoder_state = np.zeros((1, configuration.seq_len+1))
+        previous_decoder_state[0,configuration.seq_len] = 1.0
 
         # Get Encoder Result
         encoder_result = encoder_model.predict(np.array(current_encoder_input_data).reshape(1,91))
@@ -175,24 +179,31 @@ def predict_bidirectional_seq2seq_qscore_set (encoder_input_data : Any, decoder_
         decoded_sequence = []
 
         while len(decoded_sequence) < configuration.seq_len + 1 :
-            # Decode the symbol by plugging encoder result with previous state
-            decoder_output, state_h, state_c = decoder_model.predict([encoder_output[0,:configuration.num_decoder_tokens,:].reshape(1,configuration.num_decoder_tokens,configuration.latent_dim*2), previous_decoder_state, state_h, state_c])
-
+            # Decode the symbol by plugging encoder result with previous state           
+            decoder_output, state_h, state_c = decoder_model.predict([previous_decoder_state] + [encoder_output, state_h, state_c])
+            
             # Decoded Symbol
             current_decoded_symbol = np.argmax(decoder_output[0, -1, :])
             decoded_sequence.append(current_decoded_symbol)
 
             # Baking 🍞 new previous target for the next round
-            previous_decoder_state = np.zeros((1, configuration.num_decoder_tokens))
+            previous_decoder_state = np.zeros((1, configuration.seq_len+1))
             previous_decoder_state[0,current_decoded_symbol] = 1.0
 
         # FIXME Maybe incorrct sequence was predicted
         score_list_storage.append(decoded_sequence)
+        
+        # Write difference between actual and predicted to file
+        diff_array = np.subtract(raw_score_data[data_index][:configuration.seq_len],decoded_sequence[:configuration.seq_len]) #This will be used for the final correction of Q-scores
+        diff_result_file.write(str(diff_array.tolist())[1:-1].replace(' ', '') + '\n')
 
-        # DEBUG Showing Current Sequence
-        print(decoded_sequence)
+        # Calculate Distance between actual and predicted
+        accum_sigma_distance += calculate_distance_from_predicted_result(raw_score_data[data_index][:configuration.seq_len],decoded_sequence[:configuration.seq_len])
 
-        # TODO Store MSE for each iteration
+        # Calculate current mse then write to file and show on window
+        current_mse = (1/(data_index+1 * configuration.seq_len)) * accum_sigma_distance
+        mse_progress_file.write(str(current_mse) + '\n')
+        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", round(((data_index+1)/configuration.seq_num)*100,2), ' %) with MSE', current_mse)
     
     return score_list_storage
 
@@ -207,7 +218,11 @@ def main(args) :
     print("Experiment Name", experiment_name)
 
     model_full_path = model_path + '/' + experiment_name + '.h5'
+    encoder_model_full_path = model_path + '/' + experiment_name + '_encoder.h5'
+    decoder_model_full_path = model_path + '/' + experiment_name + '_decoder.h5'
 
+    array_diff_full_file_name = predicted_diff_path + '/' + experiment_name + '.diff'
+    mse_log_full_file_name = mse_progress + '/' + experiment_name + '_MSE.csv'
 
     configuration = Configuration(
         experiment_name = experiment_name,
@@ -227,14 +242,16 @@ def main(args) :
     encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_data(feature_file, configuration)
 
     # Build Full Model
-    full_model = build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
-    full_model.save(model_full_path)
+    # full_model = build_bidirectional_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
+    # full_model.save(model_full_path)
 
     # Transform full model to encoder and decoder model
     encoder_model, decoder_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_L32_E32_Lr0-001_BSm00-1_10000.h5', configuration)
+    encoder_model.save(encoder_model_full_path)
+    decoder_model.save(decoder_model_full_path)
 
     # Predict data
-    pred = predict_bidirectional_seq2seq_qscore_set(encoder_input_data, decoder_target_data, encoder_model, decoder_model, configuration)
+    pred = predict_bidirectional_seq2seq_qscore_set(encoder_input_data, raw_score_data, encoder_model, decoder_model, configuration, mse_log_full_file_name, array_diff_full_file_name)
     
 if __name__ == "__main__":
     main(sys.argv)
