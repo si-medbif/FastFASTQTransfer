@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.utils import to_categorical
+from Configuration import Configuration
 
 # Data Pipeline Helper Functions
 def load_seq2_seq_data (feature_file_path: str, configuration: Configuration) :
