@@ -2,6 +2,41 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from tensorflow.keras.utils import to_categorical
+
+# Data Pipeline Helper Functions
+def load_seq2_seq_data (feature_file_path: str, configuration: Configuration) :
+    encoder_input_data = []
+    decoder_input_data = []
+    decoder_target_data = []
+    raw_score_data = []
+
+    data_counter = 0
+
+    with open(feature_file_path) as f:
+        for line in f :
+            line_items = line.rstrip().split(',')
+            no_of_features = int(len(line_items)/2)
+
+            # Baking Features
+            features = line_items[:no_of_features] + [0] #Pad the last position for the attention layer
+            encoder_input_data.append(features)
+
+            raw_scores = line_items[no_of_features:]
+            decoder_input_data.append([41] + raw_scores)
+            decoder_target_data.append(to_categorical(raw_scores + [41], num_classes= 42))
+            raw_score_data.append([int(item) for item in raw_scores])
+            data_counter += 1
+
+            if data_counter == configuration.seq_num :
+                break
+
+    encoder_input_data = np.array(encoder_input_data,dtype="float32")
+    decoder_input_data = np.array(decoder_input_data,dtype="float32")
+    decoder_target_data = np.array(decoder_target_data,dtype="float32")
+
+    return encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data
+
 def generate_training_statistic_file (training_history, experiment_name, destination_file_path = 'Results/model_experiment/training_stat') : 
     # Dump History to File
     result_df = pd.DataFrame(training_history.history)
