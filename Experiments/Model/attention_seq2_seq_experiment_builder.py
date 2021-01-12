@@ -100,11 +100,10 @@ def transform_model (full_model, configuration: Configuration) -> (Model,Model) 
     encoder_input = full_model.inputs[0]
     encoder_embedded = full_model.get_layer('embedding')
     encoder_embedded_output = encoder_embedded.output
-    encoder_lstm = full_model.get_layer('bidirectional')
-    encoder_output,fwd_h,bck_h,fwd_c,bck_c = encoder_lstm(encoder_embedded.output)
 
-    state_h = [bck_h, fwd_h]
-    state_c = [bck_c, fwd_c]
+    encoder_lstm = full_model.get_layer('lstm')
+    encoder_output,state_h, state_c = encoder_lstm(encoder_embedded_output)
+
     encoder_states = [state_h, state_c]
 
     encoder_model = Model(encoder_input, [encoder_output] + encoder_states)
@@ -175,6 +174,7 @@ def predict_attention_seq2seq_qscore_set (encoder_input_data : Any, raw_score_da
         # Storing Decoded Sequence
         decoded_sequence = []
 
+        position = 0
         while len(decoded_sequence) < configuration.seq_len + 1 :
             # Decode the symbol by plugging encoder result with previous state           
             decoder_output, state_h, state_c = decoder_model.predict([previous_decoder_state] + [encoder_output, state_h, state_c])
@@ -185,9 +185,10 @@ def predict_attention_seq2seq_qscore_set (encoder_input_data : Any, raw_score_da
 
             # Baking 🍞 new previous target for the next round
             previous_decoder_state = np.zeros((1, configuration.seq_len+1))
-            previous_decoder_state[0,current_decoded_symbol] = 1.0
+            previous_decoder_state[0,position] = current_decoded_symbol
 
-        # FIXME Maybe incorrct sequence was predicted
+            position += 1
+
         score_list_storage.append(decoded_sequence)
         
         # Write difference between actual and predicted to file
@@ -200,6 +201,8 @@ def predict_attention_seq2seq_qscore_set (encoder_input_data : Any, raw_score_da
         # Calculate current mse then write to file and show on window
         current_mse = (1/(data_index+1 * configuration.seq_len)) * accum_sigma_distance
         mse_progress_file.write(str(current_mse) + '\n')
+
+        print(decoded_sequence)
         print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", round(((data_index+1)/configuration.seq_num)*100,2), ' %) with MSE', current_mse)
     
     return score_list_storage
@@ -239,9 +242,10 @@ def main(args) :
     encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_data(feature_file, configuration)
 
     # Build Full Model
-    full_model = build_attention_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
-    full_model.save(model_full_path)
+    # full_model = build_attention_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
+    # full_model.save(model_full_path)
 
+    full_model = 'Results/model_experiment/model/seq2seq/Seq2Seq_Attention_L32_E32_Lr0-001_BSm00-1_10000.h5'
     # Transform full model to encoder and decoder model
     encoder_model, decoder_model = transform_model(full_model, configuration)
     encoder_model.save(encoder_model_full_path)
