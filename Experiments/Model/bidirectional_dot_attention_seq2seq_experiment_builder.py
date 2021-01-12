@@ -204,3 +204,6 @@ def main(args) :
     # FIXME properly save predicted data
     pred_file = open('pred.pickle', 'wb')
     pickle.dump(pred, pred_file)
+
+if __name__ == "__main__":
+    main(sys.argv)
