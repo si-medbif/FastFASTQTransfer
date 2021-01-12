@@ -171,7 +171,7 @@ def main(args) :
 
     configuration = Configuration(
         experiment_name = experiment_name,
-        latent_dim=32,
+        latent_dim=128,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
@@ -192,12 +192,14 @@ def main(args) :
 
     # Transform full model to attention, encoder and decoder model
     # encoder_model, decoder_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_L32_E32_Lr0-001_BSm00-1_10000.h5', configuration)
-    encoder_model, decoder_model = transform_model(full_model , configuration)
+    encoder_model, decoder_model, attention_model = transform_model(full_model , configuration)
+    
     encoder_model.save(encoder_model_full_path)
     decoder_model.save(decoder_model_full_path)
+    attention_model.save(attention_model_full_path)
 
     # Predict data
-    pred = predict_bidirectional_dot_attention_seq2seq_batch(encoder_input_data, raw_score_data, encoder_model, decoder_model, configuration, mse_log_full_file_name, array_diff_full_file_name)
+    pred = predict_bidirectional_dot_attention_seq2seq_batch(encoder_input_data, raw_score_data, encoder_model, decoder_model, attention_model, configuration, mse_log_full_file_name, array_diff_full_file_name)
     
     # FIXME properly save predicted data
     pred_file = open('pred.pickle', 'wb')
