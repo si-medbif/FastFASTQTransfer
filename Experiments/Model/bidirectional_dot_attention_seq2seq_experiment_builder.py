@@ -17,6 +17,40 @@ from CustomCallbacks import WarmUpReduceLROnPlateau
 # INPUT: Feature File Path, Destination Hist Path, Model Path, Array Diff Path, MSE Progress File, Experiment Name
 # OUTPUT: History File, Model File, Array Diff Result
 
+def load_data (feature_file_path: str, configuration: Configuration) :
+    feature_file = open(feature_file_path, 'r')
+
+    encoder_input_data = list()
+    decoder_target_data = list()
+
+    line = feature_file.readline()
+
+    current_rec = 0
+
+    while line != '' :
+        line_component = line[:-1].split(',')
+        no_of_feature = int(len(line_component) / 2)
+        encoded_seq = line_component[:no_of_feature]
+        raw_score = line_component[no_of_feature:]
+
+        encoder_input_data.append(encoded_seq)
+        decoder_target_data.append(raw_score)
+
+        current_rec += 1
+
+        if current_rec == configuration.seq_num :
+            break
+        
+        line = feature_file.readline()
+
+    feature_file.close()
+
+    encoder_input_data = np.array(encoder_input_data,dtype="float32")
+    decoder_target_data = np.array(decoder_target_data,dtype="float32")
+    decoder_input_data = np.concatenate([np.ones((decoder_target_data.shape[0],1))*41.,decoder_target_data[:,:-1]],axis = -1)
+
+    return encoder_input_data, decoder_input_data, decoder_target_data
+
 def build_bidirectional_dot_attention_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) -> Model :
     
     # Encoder
@@ -184,7 +218,7 @@ def main(args) :
     )
 
     # Load Dataset
-    encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data = load_seq2_seq_data(feature_file, configuration)
+    encoder_input_data, decoder_input_data, decoder_target_data = load_data(feature_file, configuration)
 
     # Build Full Model
     full_model = build_bidirectional_dot_attention_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
