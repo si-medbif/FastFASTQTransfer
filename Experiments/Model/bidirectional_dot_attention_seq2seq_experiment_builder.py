@@ -144,7 +144,7 @@ def transform_model (full_model, configuration: Configuration) -> (Model, Model,
 
     return encoder_model, decoder_model, attention_model
 
-def predict_bidirectional_dot_attention_seq2seq_single_record (encoder_input_data : Any, raw_score_data: Any, encoder_model : Model, decoder_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str) -> list:
+def predict_bidirectional_dot_attention_seq2seq_single_record (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str) -> list:
     
     encoder_output, encoder_state_h, encoder_state_c = encoder_model.predict(encoder_input_data)
     result = []
@@ -155,28 +155,31 @@ def predict_bidirectional_dot_attention_seq2seq_single_record (encoder_input_dat
         output,current_h,current_c = decoder_model.predict([np.array([[current_dec_input]]),current_h,current_c])
         current_dec_input = np.argmax(output[0,-1,:])
         result.append(current_dec_input)
-        if len(result) == raw_score_data.shape[1] - 1:
+        print
+        if len(result) == encoder_input_data.shape[1] - 1:
             break
 
     return result
 
-def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any, raw_score_data: Any, encoder_model : Model, decoder_model: Model, attention_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str):
+def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, attention_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str):
     # array_diff_file = open(array_diff_full_path, 'w')
     # mse_log_file = open(mse_log_full_path, 'w')
 
-    inf_enc_out, inf_enc_state_h, inf_enc_state_c = encoder_model.predict(encoder_input_data)
+    encoder_output, inf_enc_state_h, inf_enc_state_c = encoder_model.predict(encoder_input_data)
     results = np.array([])
     current_dec_input = np.ones((encoder_input_data.shape[0], 1)) * 41.
     current_h = inf_enc_state_h
     current_c = inf_enc_state_c
     while True:
         pre_output,current_h,current_c = decoder_model.predict([current_dec_input,current_h,current_c])
-        output = attention_model.predict([pre_output,inf_enc_out])
+        output = attention_model.predict([pre_output,encoder_output])
         current_dec_input = output.argmax(axis=-1)
+       
         if results.shape[0] == 0:
             results = current_dec_input
         else:
             results = np.concatenate((results,current_dec_input),axis = -1)
+                   
         if results.shape[-1] == (encoder_input_data.shape[-1]):
             break
     
@@ -205,12 +208,12 @@ def main(args) :
 
     configuration = Configuration(
         experiment_name = experiment_name,
-        latent_dim=128,
+        latent_dim=512,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
         num_decoder_embed = 32,
-        seq_num= 10000,
+        seq_num= 230000,
         seq_len = 90,
         base_learning_rate=0.001,
         batch_size=int(10000 * 0.01),
@@ -225,7 +228,7 @@ def main(args) :
     full_model.save(model_full_path)
 
     # Transform full model to attention, encoder and decoder model
-    # encoder_model, decoder_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_L32_E32_Lr0-001_BSm00-1_10000.h5', configuration)
+    # encoder_model, decoder_model, attention_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L128_E32_Lr0-001_BSm0-001_10000.h5', configuration)
     encoder_model, decoder_model, attention_model = transform_model(full_model , configuration)
     
     encoder_model.save(encoder_model_full_path)
@@ -233,11 +236,11 @@ def main(args) :
     attention_model.save(attention_model_full_path)
 
     # Predict data
-    pred = predict_bidirectional_dot_attention_seq2seq_batch(encoder_input_data, raw_score_data, encoder_model, decoder_model, attention_model, configuration, mse_log_full_file_name, array_diff_full_file_name)
+    # pred = predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data=encoder_input_data, encoder_model=encoder_model, decoder_model=decoder_model, attention_model=attention_model, configuration = configuration, mse_log_full_path = mse_log_full_file_name, array_diff_full_path = array_diff_full_file_name)
     
     # FIXME properly save predicted data
-    pred_file = open('pred.pickle', 'wb')
-    pickle.dump(pred, pred_file)
+    # pred_file = open('pred.pickle', 'wb')
+    # pickle.dump(pred, pred_file)
 
 if __name__ == "__main__":
     main(sys.argv)
