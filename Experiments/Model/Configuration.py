@@ -4,7 +4,7 @@ import math
 # Store the model configuration for each experiment
 
 class Configuration :
-    def __init__ (self, experiment_name, latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, num_encoder_embed = 2, num_decoder_embed = 32, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
+    def __init__ (self, experiment_name='Untitled', latent_dim=256, num_encoder_tokens = 5, num_decoder_tokens = 41, num_encoder_embed = 2, num_decoder_embed = 32, seq_num= 10000, seq_len = 90, base_learning_rate=0.01, batch_size=10, loss='categorical_crossentropy') :
         self.experiment_name = experiment_name
         self.latent_dim = latent_dim
         self.num_encoder_tokens = num_encoder_tokens
