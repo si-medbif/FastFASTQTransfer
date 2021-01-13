@@ -161,10 +161,7 @@ def predict_bidirectional_dot_attention_seq2seq_single_record (encoder_input_dat
 
     return result
 
-def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, attention_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str):
-    # array_diff_file = open(array_diff_full_path, 'w')
-    # mse_log_file = open(mse_log_full_path, 'w')
-
+def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, attention_model: Model, configuration: Configuration):
     encoder_output, inf_enc_state_h, inf_enc_state_c = encoder_model.predict(encoder_input_data)
     results = np.array([])
     current_dec_input = np.ones((encoder_input_data.shape[0], 1)) * 41.
@@ -179,15 +176,49 @@ def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any,
             results = current_dec_input
         else:
             results = np.concatenate((results,current_dec_input),axis = -1)
-                   
+
+        print(results.shape)
+        print(results[:-1])
+
         if results.shape[-1] == (encoder_input_data.shape[-1]):
             break
-    
-    # array_diff_file.close()
-    # mse_log_file.close()
-
     return results
 
+def calculate_diff_from_np (pred_np: np.ndarray, decoder_target_data: np.ndarray, mse_log_full_path) -> (list, int) :
+    mse_log_file = open(mse_log_full_path, 'w')
+
+    # Pred Shape,Decoder Target Data  (n_read, seq_len)
+    seq_num = min(pred_np.shape[0], decoder_target_data.shape[0])
+    seq_len = min(pred_np.shape[1], decoder_target_data.shape[1])
+
+    accum_sigma_distance = 0
+
+    result_list = list()
+
+    for read_no in range(0, seq_num) :
+        current_pred = pred_np[read_no, :]
+        current_target = decoder_target_data[read_no, :]
+        diff = np.subtract(current_target, current_pred).astype(int)
+
+        result_list.append(diff.tolist())
+        
+        accum_sigma_distance += np.sum(np.power(diff, 2))
+        n_of_data = (read_no+1) * seq_len
+        mse = (1/n_of_data) * accum_sigma_distance
+        mse_log_file.write(str(mse) + '\n')
+    
+    mse_log_file.close()
+
+    return result_list, mse
+
+def write_offset_to_file (offset_list, destination_file_path):
+    destination_file = open(destination_file_path, 'w')
+
+    for read in offset_list :
+        destination_file.write(str(read)[1:-1].replace(' ', '') + '\n')
+
+    destination_file.close()
+    
 def main(args) :
     feature_file = args[1]
     training_hist_path = args[2]
@@ -208,12 +239,12 @@ def main(args) :
 
     configuration = Configuration(
         experiment_name = experiment_name,
-        latent_dim=512,
+        latent_dim=128,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
         num_decoder_embed = 32,
-        seq_num= 230000,
+        seq_num= 30000,
         seq_len = 90,
         base_learning_rate=0.001,
         batch_size=int(10000 * 0.01),
@@ -228,7 +259,6 @@ def main(args) :
     full_model.save(model_full_path)
 
     # Transform full model to attention, encoder and decoder model
-    # encoder_model, decoder_model, attention_model = transform_model('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L128_E32_Lr0-001_BSm0-001_10000.h5', configuration)
     encoder_model, decoder_model, attention_model = transform_model(full_model , configuration)
     
     encoder_model.save(encoder_model_full_path)
@@ -236,11 +266,9 @@ def main(args) :
     attention_model.save(attention_model_full_path)
 
     # Predict data
-    # pred = predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data=encoder_input_data, encoder_model=encoder_model, decoder_model=decoder_model, attention_model=attention_model, configuration = configuration, mse_log_full_path = mse_log_full_file_name, array_diff_full_path = array_diff_full_file_name)
+    pred = predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data=encoder_input_data, encoder_model=encoder_model, decoder_model=decoder_model, attention_model=attention_model, configuration = configuration)
+    offset_list, mse = calculate_diff_from_np(pred, decoder_target_data, mse_progress + '/' + experiment_name + '_MSE.csv')
+    write_offset_to_file(offset_list, predicted_diff_path + '/' + experiment_name + '.diff')
     
-    # FIXME properly save predicted data
-    # pred_file = open('pred.pickle', 'wb')
-    # pickle.dump(pred, pred_file)
-
 if __name__ == "__main__":
     main(sys.argv)
