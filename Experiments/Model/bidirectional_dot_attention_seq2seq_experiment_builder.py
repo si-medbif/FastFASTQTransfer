@@ -1,5 +1,8 @@
 import sys
-import pickle
+import os
+import time
+import math
+import pandas as pd
 import numpy as np
 
 from tensorflow.keras import Input, Model
@@ -14,261 +17,509 @@ from Configuration import Configuration
 from CustomCallbacks import WarmUpReduceLROnPlateau
 
 # Bidirectional LSTM with Dot Attention Seq2Seq Model Experiment
-# INPUT: Feature File Path, Destination Hist Path, Model Path, Array Diff Path, MSE Progress File, Experiment Name
+# INPUT: Feature File Path
 # OUTPUT: History File, Model File, Array Diff Result
 
-def load_data (feature_file_path: str, configuration: Configuration) :
-    feature_file = open(feature_file_path, 'r')
+class BidirectionalDotAttentionSeq2SeqExperimentBuilder :
+    def __init__ (self, configuration : Configuration, feature_file_path: str, 
+    training_hist_base_path : str = 'Results/model_experiment/training_stat/seq2seq', 
+    model_base_path: str = 'Results/model_experiment/model/seq2seq', 
+    array_diff_base_path: str = 'Results/model_experiment/predicted_diff', 
+    mse_log_base_path: str = 'Results/model_experiment/mse_log',
+    experiment_name_prefix: str = 'Seq2Seq_Bidirectional_DotAttention') -> None:
 
-    encoder_input_data = list()
-    decoder_target_data = list()
+        # Init Config and Experiment Name
+        self.__configuration = configuration
+        self.__experiment_name_prefix = experiment_name_prefix
+        self.__experiment_name = self.__generate_experiment_name()
 
-    line = feature_file.readline()
+        # Model Obj
+        self.__full_model = None
+        self.__encoder_model = None
+        self.__decoder_model = None
+        self.__attention_model = None
 
-    current_rec = 0
+        # Path Init
+        self.__base_training_hist_path = training_hist_base_path
+        self.__training_hist_path = training_hist_base_path + '/' + self.__experiment_name + '.model_hist'
+        self.__array_diff_path = array_diff_base_path + '/' + self.__experiment_name + '.diff'
+        self.__mse_log_path = mse_log_base_path + '/' + self.__experiment_name + '_MSE.csv'
 
-    while line != '' :
-        line_component = line[:-1].split(',')
-        no_of_feature = int(len(line_component) / 2)
-        encoded_seq = line_component[:no_of_feature]
-        raw_score = line_component[no_of_feature:]
+        self.__full_model_path = model_base_path + '/' + self.__experiment_name + '.h5'
+        self.__encoder_model_path = model_base_path + '/' + self.__experiment_name + '_encoder.h5'
+        self.__decoder_model_path = model_base_path + '/' + self.__experiment_name + '_decoder.h5'
+        self.__attention_model_path = model_base_path + '/' + self.__experiment_name + '_attention.h5'
 
-        encoder_input_data.append(encoded_seq)
-        decoder_target_data.append(raw_score)
+        # Input Data Init
+        self.__feature_file_path = feature_file_path
+        self.encoder_input_data = None
+        self.decoder_input_data = None
+        self.decoder_target_data = None
 
-        current_rec += 1
+        print(self.__experiment_name, ' has been created')
 
-        if current_rec == configuration.seq_num :
-            break
-        
+    # Name and Path Generator (Need static getter <- Don't want modified path)
+    def __generate_experiment_name (self) -> str :
+        if self.__configuration.batch_size < 1 :
+            batch_size_in_name = 'm' + str(self.__configuration.batch_size).replace('.', '-')
+        else :
+            batch_size_in_name = str(self.__configuration.batch_size)
+
+        return self.__experiment_name_prefix + '_L' + str(self.__configuration.latent_dim) + '_E' + str(self.__configuration.num_decoder_embed) + '_Lr' + str(self.__configuration.base_learning_rate).replace('.', '-') + '_BS' + batch_size_in_name + '_' + str(self.__configuration.seq_num)
+
+    def get_experiment_name (self) -> str :
+        return self.__experiment_name
+
+    def get_training_hist_path (self) -> str:
+        return self.__training_hist_path
+    
+    def get_array_diff_path (self) -> str :
+        return self.__array_diff_path
+    
+    def get_mse_progress_path (self) -> str :
+        return self.__mse_log_path
+
+    # Model Setter
+    def load_full_model (self, full_model_path: str) -> None:
+        self.__full_model_path = full_model_path
+        self.__full_model = load_model(self.__full_model_path)
+
+    # Model Getters
+    def get_full_model (self) -> Model:
+        return self.__full_model
+    
+    def get_encoder_model (self) -> Model:
+        return self.__encoder_model
+    
+    def get_decoder_model (self) -> Model:
+        return self.__decoder_model
+    
+    def get_attention_model (self) -> Model:
+        return self.__attention_model
+
+    # Utilities Functions
+    def __get_real_batch_size (self) -> int :
+        # If Batch Size is multiply so input as decimal
+        if self.__configuration.batch_size < 1 :
+            return int(self.__configuration.batch_size * self.__configuration.seq_num)
+        else :
+            return self.__configuration.batch_size
+
+    def __write_offset_to_file (self, offset_list) -> None:
+        destination_file = open(self.__array_diff_path, 'w')
+
+        for read in offset_list :
+            destination_file.write(str(read)[1:-1].replace(' ', '') + '\n')
+
+        destination_file.close()
+
+    # Sub-Pipeline functions
+
+    def load_data (self) -> None :
+        feature_file = open(self.__feature_file_path, 'r')
+
+        encoder_input_data = list()
+        decoder_target_data = list()
+
         line = feature_file.readline()
 
-    feature_file.close()
+        current_rec = 0
 
-    encoder_input_data = np.array(encoder_input_data,dtype="float32")
-    decoder_target_data = np.array(decoder_target_data,dtype="float32")
-    decoder_input_data = np.concatenate([np.ones((decoder_target_data.shape[0],1))*41.,decoder_target_data[:,:-1]],axis = -1)
+        while line != '' :
+            line_component = line[:-1].split(',')
+            no_of_feature = int(len(line_component) / 2)
+            encoded_seq = line_component[:no_of_feature]
+            raw_score = line_component[no_of_feature:]
 
-    return encoder_input_data, decoder_input_data, decoder_target_data
+            encoder_input_data.append(encoded_seq)
+            decoder_target_data.append(raw_score)
 
-def build_bidirectional_dot_attention_seq2seq_model (configuration: Configuration, model_full_path: str, training_hist_path: str, encoder_input_data, decoder_input_data, decoder_target_data) -> Model :
-    
-    # Encoder
-    encoder_inputs = Input(shape=(None,))
-    encoder_embed = Embedding(output_dim=configuration.num_encoder_embed, input_dim=configuration.num_encoder_tokens)
-    encoder = Bidirectional(LSTM(configuration.latent_dim, return_sequences=True, return_state=True))
-    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_embed(encoder_inputs))
-    state_h = Concatenate()([forward_h, backward_h])
-    state_c = Concatenate()([forward_c, backward_c])
-    encoder_states = [state_h, state_c]
+            current_rec += 1
 
-    # Decoder
-    decoder_inputs = Input(shape=(None, ))
-    decoder_embed = Embedding(output_dim=configuration.num_decoder_embed, input_dim=configuration.num_decoder_tokens)   
-    decoder_lstm = LSTM(configuration.latent_dim*2, return_sequences=True, return_state=True)
-    decoder_outputs,_,_= decoder_lstm(decoder_embed(decoder_inputs), initial_state=encoder_states)
+            if current_rec == self.__configuration.seq_num :
+                break
+            
+            line = feature_file.readline()
 
-    # Dot attention
-    attention = Dot(axes=[2, 2])([decoder_outputs, encoder_outputs])
-    attention = Activation('softmax')(attention)
-    
-    context = Dot(axes=[2, 1])([attention,encoder_outputs]) # dot([attention, encoder], axes=[2,1])
-    decoder_combined_context = Concatenate(axis = -1)([context, decoder_outputs])
+        feature_file.close()
 
-    pre_decoder_outputs = TimeDistributed(Dense(configuration.latent_dim*2, activation="tanh"))(decoder_combined_context) # equation (5) of the paper
-    decoder_dense =  TimeDistributed(Dense(configuration.num_decoder_tokens, activation='softmax'))
-    decoder_outputs = decoder_dense(pre_decoder_outputs )
+        encoder_input_data = np.array(encoder_input_data,dtype="float32")
+        decoder_target_data = np.array(decoder_target_data,dtype="float32")
+        decoder_input_data = np.concatenate([np.ones((decoder_target_data.shape[0],1))*41.,decoder_target_data[:,:-1]],axis = -1)
 
-    # Plug everything together
-    full_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+        self.__encoder_input_data = encoder_input_data
+        self.__decoder_target_data = decoder_target_data
+        self.__decoder_input_data = decoder_input_data
 
-    # Compile and Build the model
-    earlystop_callback = EarlyStopping(monitor='loss', min_delta=0.00001, patience=16)
-    model_checkpoint_callback = ModelCheckpoint(filepath=model_full_path, monitor='accuracy', mode='max', save_best_only=True)
-    reduce_lr = WarmUpReduceLROnPlateau(monitor='loss', factor=0.2, patience=5, min_lr=0, init_lr = configuration.base_learning_rate, warmup_batches = configuration.count_train * 5, min_delta = 0.001)
+    def build_model (self, keras_verbose=1) -> None :
+        # Load the data when there is no data in the obj
+        if self.__encoder_input_data is None or self.__decoder_input_data is None or self.__decoder_target_data is None:
+            print('Data did not be loaded. Loading now...')
+            self.load_data()
 
-    full_model.compile(optimizer=RMSprop(lr=configuration.base_learning_rate), loss=configuration.loss, metrics=["accuracy"])
+        # Encoder Part
+        encoder_inputs = Input(shape=(None,))
+        encoder_embed = Embedding(output_dim=self.__configuration.num_encoder_embed, input_dim=self.__configuration.num_encoder_tokens)
+        encoder = Bidirectional(LSTM(self.__configuration.latent_dim, return_sequences=True, return_state=True))
+        encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_embed(encoder_inputs))
+        state_h = Concatenate()([forward_h, backward_h])
+        state_c = Concatenate()([forward_c, backward_c])
+        encoder_states = [state_h, state_c]
 
-    training_hist = full_model.fit([encoder_input_data, decoder_input_data], decoder_target_data, batch_size=configuration.batch_size, epochs=1000, callbacks=[reduce_lr,earlystop_callback,model_checkpoint_callback])
-    
-    # Save training stat to file
-    generate_training_statistic_file(training_hist, configuration.experiment_name, destination_file_path = training_hist_path)
+        # Decoder Part
+        decoder_inputs = Input(shape=(None, ))
+        decoder_embed = Embedding(output_dim=self.__configuration.num_decoder_embed, input_dim=self.__configuration.num_decoder_tokens)   
+        decoder_lstm = LSTM(self.__configuration.latent_dim*2, return_sequences=True, return_state=True)
+        decoder_outputs,_,_= decoder_lstm(decoder_embed(decoder_inputs), initial_state=encoder_states)
 
-    return full_model
-
-def transform_model (full_model, configuration: Configuration) -> (Model, Model, Model) :
-    if type(full_model) == str :
-        full_model = load_model(full_model)
-    
-    # Encoder Model
-    inf_enc_input = full_model.input[0]
-    inf_enc_embed = full_model.layers[1]
-    inf_encoder = full_model.layers[3]
-    inf_enc_out, inf_fh, inf_fc, inf_bh, inf_bc =  inf_encoder(inf_enc_embed(inf_enc_input))
-    inf_enc_state_h = Concatenate()([inf_fh, inf_bh])
-    inf_enc_state_c = Concatenate()([inf_fc, inf_bc])
-    inf_enc_states = [inf_enc_state_h, inf_enc_state_c]
-
-    encoder_model = Model(inf_enc_input,[inf_enc_out]+inf_enc_states)
-
-    # Decoder Model
-    decoder_inputs = full_model.input[1]  # input_2
-    decoder_embed_inputs = full_model.layers[4](decoder_inputs)
-
-    decoder_state_input_h = Input(shape=(configuration.latent_dim * 2,), name="input_3")
-    decoder_state_input_c = Input(shape=(configuration.latent_dim * 2,), name="input_4")
-
-    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-    decoder_lstm = full_model.layers[7]
-    pre_decoder_outputs, state_h_dec, state_c_dec = decoder_lstm(decoder_embed_inputs , initial_state=decoder_states_inputs)
-    decoder_states = [state_h_dec, state_c_dec]
-
-    decoder_model = Model([decoder_inputs] + decoder_states_inputs, [pre_decoder_outputs] + decoder_states)
-
-    # Attention model
-    attn_decoder_outputs =Input(shape = (None,configuration.latent_dim * 2,), name = "Dec_output_receptor")
-    attn_encoder_outputs =Input(shape = (None,configuration.latent_dim * 2,), name = "Enc_output_receptor")
-
-    attention = Dot(axes=[2, 2])([attn_decoder_outputs, attn_encoder_outputs])
-    attention = Activation('softmax')(attention)
-
-    context = Dot(axes=[2, 1])([attention,attn_encoder_outputs]) 
-    attn_decoder_combined_context = Concatenate(axis = -1)([context, attn_decoder_outputs])
-
-    first_dense = full_model.layers[12]
-    final_dense = full_model.layers[13]
-
-    pre_decoder_outputs = first_dense(attn_decoder_combined_context) # equation (5) of the paper
-    attn_outputs = final_dense(pre_decoder_outputs)
-    attention_model = Model([attn_decoder_outputs,attn_encoder_outputs], attn_outputs)
-
-    return encoder_model, decoder_model, attention_model
-
-def predict_bidirectional_dot_attention_seq2seq_single_record (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, configuration: Configuration, mse_log_full_path: str, array_diff_full_path:str) -> list:
-    
-    encoder_output, encoder_state_h, encoder_state_c = encoder_model.predict(encoder_input_data)
-    result = []
-    current_dec_input = 41. # <- Starting Symbol
-    current_h = encoder_state_h
-    current_c = encoder_state_c
-    while True:
-        output,current_h,current_c = decoder_model.predict([np.array([[current_dec_input]]),current_h,current_c])
-        current_dec_input = np.argmax(output[0,-1,:])
-        result.append(current_dec_input)
-        print
-        if len(result) == encoder_input_data.shape[1] - 1:
-            break
-
-    return result
-
-def predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data : Any, encoder_model : Model, decoder_model: Model, attention_model: Model, configuration: Configuration):
-    encoder_output, inf_enc_state_h, inf_enc_state_c = encoder_model.predict(encoder_input_data)
-    results = np.array([])
-    current_dec_input = np.ones((encoder_input_data.shape[0], 1)) * 41.
-    current_h = inf_enc_state_h
-    current_c = inf_enc_state_c
-    while True:
-        pre_output,current_h,current_c = decoder_model.predict([current_dec_input,current_h,current_c])
-        output = attention_model.predict([pre_output,encoder_output])
-        current_dec_input = output.argmax(axis=-1)
-       
-        if results.shape[0] == 0:
-            results = current_dec_input
-        else:
-            results = np.concatenate((results,current_dec_input),axis = -1)
-
-        print(results.shape)
-        print(results[:-1])
-
-        if results.shape[-1] == (encoder_input_data.shape[-1]):
-            break
-    return results
-
-def calculate_diff_from_np (pred_np: np.ndarray, decoder_target_data: np.ndarray, mse_log_full_path) -> (list, int) :
-    mse_log_file = open(mse_log_full_path, 'w')
-
-    # Pred Shape,Decoder Target Data  (n_read, seq_len)
-    seq_num = min(pred_np.shape[0], decoder_target_data.shape[0])
-    seq_len = min(pred_np.shape[1], decoder_target_data.shape[1])
-
-    accum_sigma_distance = 0
-
-    result_list = list()
-
-    for read_no in range(0, seq_num) :
-        current_pred = pred_np[read_no, :]
-        current_target = decoder_target_data[read_no, :]
-        diff = np.subtract(current_target, current_pred).astype(int)
-
-        result_list.append(diff.tolist())
+        # Dot Attention Part
+        attention = Dot(axes=[2, 2])([decoder_outputs, encoder_outputs])
+        attention = Activation('softmax')(attention)
         
-        accum_sigma_distance += np.sum(np.power(diff, 2))
-        n_of_data = (read_no+1) * seq_len
-        mse = (1/n_of_data) * accum_sigma_distance
-        mse_log_file.write(str(mse) + '\n')
+        context = Dot(axes=[2, 1])([attention,encoder_outputs]) # dot([attention, encoder], axes=[2,1])
+        decoder_combined_context = Concatenate(axis = -1)([context, decoder_outputs])
+
+        pre_decoder_outputs = TimeDistributed(Dense(self.__configuration.latent_dim*2, activation="tanh"))(decoder_combined_context) # equation (5) of the paper
+        decoder_dense =  TimeDistributed(Dense(self.__configuration.num_decoder_tokens, activation='softmax'))
+        decoder_outputs = decoder_dense(pre_decoder_outputs )
+
+        # Plug everything together
+        full_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+
+        # Compile and Build the model
+        earlystop_callback = EarlyStopping(monitor='loss', min_delta=0.00001, patience=16)
+        model_checkpoint_callback = ModelCheckpoint(filepath=self.__full_model_path, monitor='accuracy', mode='max', save_best_only=True)
+        reduce_lr = WarmUpReduceLROnPlateau(monitor='loss', factor=0.2, patience=5, min_lr=0, init_lr = self.__configuration.base_learning_rate, warmup_batches = self.__configuration.count_train * 5, min_delta = 0.001)
+
+        full_model.compile(optimizer=RMSprop(lr=self.__configuration.base_learning_rate), loss=self.__configuration.loss, metrics=["accuracy"])
+
+        training_hist = full_model.fit([self.__encoder_input_data, self.__decoder_input_data], self.__decoder_target_data, batch_size=self.__get_real_batch_size(), epochs=1000, callbacks=[reduce_lr,earlystop_callback,model_checkpoint_callback], verbose=keras_verbose)
+        
+        # Save training stat to file
+        generate_training_statistic_file(training_hist, self.__experiment_name, destination_file_path = self.__base_training_hist_path)
+
+        self.__full_model = full_model
+
+    def transform_model (self) -> None :
+        if self.__full_model is None :
+            print('The model was not built. Please build full model before calling this function')
+            return None
+        
+        # Encoder Model
+        inf_enc_input = self.__full_model.input[0]
+        inf_enc_embed = self.__full_model.layers[1]
+        inf_encoder = self.__full_model.layers[3]
+        inf_enc_out, inf_fh, inf_fc, inf_bh, inf_bc =  inf_encoder(inf_enc_embed(inf_enc_input))
+        inf_enc_state_h = Concatenate()([inf_fh, inf_bh])
+        inf_enc_state_c = Concatenate()([inf_fc, inf_bc])
+        inf_enc_states = [inf_enc_state_h, inf_enc_state_c]
+
+        encoder_model = Model(inf_enc_input,[inf_enc_out]+inf_enc_states)
+
+        # Decoder Model
+        decoder_inputs = self.__full_model.input[1]  # input_2
+        decoder_embed_inputs = self.__full_model.layers[4](decoder_inputs)
+
+        decoder_state_input_h = Input(shape=(self.__configuration.latent_dim * 2,), name="input_3")
+        decoder_state_input_c = Input(shape=(self.__configuration.latent_dim * 2,), name="input_4")
+
+        decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+        decoder_lstm = self.__full_model.layers[7]
+        pre_decoder_outputs, state_h_dec, state_c_dec = decoder_lstm(decoder_embed_inputs , initial_state=decoder_states_inputs)
+        decoder_states = [state_h_dec, state_c_dec]
+
+        decoder_model = Model([decoder_inputs] + decoder_states_inputs, [pre_decoder_outputs] + decoder_states)
+
+        # Attention model
+        attn_decoder_outputs =Input(shape = (None,self.__configuration.latent_dim * 2,), name = "Dec_output_receptor")
+        attn_encoder_outputs =Input(shape = (None,self.__configuration.latent_dim * 2,), name = "Enc_output_receptor")
+
+        attention = Dot(axes=[2, 2])([attn_decoder_outputs, attn_encoder_outputs])
+        attention = Activation('softmax')(attention)
+
+        context = Dot(axes=[2, 1])([attention,attn_encoder_outputs]) 
+        attn_decoder_combined_context = Concatenate(axis = -1)([context, attn_decoder_outputs])
+
+        first_dense = self.__full_model.layers[12]
+        final_dense = self.__full_model.layers[13]
+
+        pre_decoder_outputs = first_dense(attn_decoder_combined_context) # equation (5) of the paper
+        attn_outputs = final_dense(pre_decoder_outputs)
+        attention_model = Model([attn_decoder_outputs,attn_encoder_outputs], attn_outputs)
+
+        # Save model to file
+        encoder_model.save(self.__encoder_model_path)
+        decoder_model.save(self.__decoder_model_path)
+        attention_model.save(self.__attention_model_path)
+
+        # Set as obj attr
+        self.__encoder_model = encoder_model
+        self.__decoder_model = decoder_model
+        self.__attention_model = attention_model
+
+    def predict_data (self) -> np.array :
+        if self.__encoder_input_data is None :  
+            print('Please load data before calling this function')
+            return None
+        
+        if self.__encoder_model is None or self.__decoder_model is None or  self.__attention_model is None :
+            print('The model has been transformed yet. I will transform the model for you first!')
+            self.transform_model()
+
+        # encoder_input_data shape is (seq_num, seq_len) need to reshape (no_of_round, seq_num/round, seq_len)
+        MAX_CHUNK_SIZE = 30000
+        no_of_round = math.ceil(self.__encoder_input_data.shape[0] / MAX_CHUNK_SIZE)
+
+        complete_result = np.array([])
+        
+        for chunk_no in range(no_of_round) :
+            encoder_input_data_chunk = self.__encoder_input_data[chunk_no * MAX_CHUNK_SIZE : (chunk_no + 1) * MAX_CHUNK_SIZE, :]
+
+            encoder_output, inf_enc_state_h, inf_enc_state_c = self.__encoder_model.predict(encoder_input_data_chunk)
+
+            results = np.array([])
+            current_dec_input = np.ones((encoder_input_data_chunk.shape[0], 1)) * 41.
+            current_h = inf_enc_state_h
+            current_c = inf_enc_state_c
+            while True:
+                pre_output,current_h,current_c = self.__decoder_model.predict([current_dec_input,current_h,current_c])
+                output =  self.__attention_model.predict([pre_output,encoder_output])
+                current_dec_input = output.argmax(axis=-1)
+            
+                if results.shape[0] == 0:
+                    results = current_dec_input
+                else:
+                    results = np.concatenate((results,current_dec_input),axis = -1)
+
+                if results.shape[-1] == (encoder_input_data_chunk.shape[-1]):
+
+                    if complete_result.shape[0] == 0 :
+                        complete_result = results
+                    else :
+                        complete_result = np.concatenate([complete_result, results], axis=0)
+                    break
+        
+        return results
+
+    def calculate_diff_error (self, pred_np: np.ndarray) -> (list, int) :
+        mse_log_file = open(self.__mse_log_path, 'w')
+
+        # Pred Shape,Decoder Target Data  (n_read, seq_len)
+        seq_num = min(pred_np.shape[0], self.__decoder_target_data.shape[0])
+        seq_len = min(pred_np.shape[1], self.__decoder_target_data.shape[1])
+
+        accum_sigma_distance = 0
+
+        offset_list = list()
+
+        for read_no in range(0, seq_num) :
+            current_pred = pred_np[read_no, :]
+            current_target = self.__decoder_target_data[read_no, :]
+            diff = np.subtract(current_target, current_pred).astype(int)
+
+            offset_list.append(diff.tolist())
+            
+            accum_sigma_distance += np.sum(np.power(diff, 2))
+            n_of_data = (read_no+1) * seq_len
+            mse = (1/n_of_data) * accum_sigma_distance
+            mse_log_file.write(str(mse) + '\n')
+        
+        mse_log_file.close()
+
+        self.__write_offset_to_file(offset_list)
+
+        return offset_list, mse
     
-    mse_log_file.close()
+    # Run full pipeline and report the result
+    def run (self) -> None:
+        # Report Configuration
+        print('Running ', self.__experiment_name, 'with the following configuration')
+        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
+        print('latent_dim:', self.__configuration.latent_dim)
+        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
+        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
+        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
+        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
+        print('base_learning_rate:', self.__configuration.base_learning_rate)
 
-    return result_list, mse
+        if self.__configuration.batch_size < 1 :    
+            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
+        else :
+            print('batch_size:', self.__configuration.batch_size)
 
-def write_offset_to_file (offset_list, destination_file_path):
-    destination_file = open(destination_file_path, 'w')
+        print('loss:', str(self.__configuration.loss), '\n')
+        
+        # Load Data
+        start_time = time.time()
+        self.load_data()
+        load_data_time = time.time() - start_time
 
-    for read in offset_list :
-        destination_file.write(str(read)[1:-1].replace(' ', '') + '\n')
+        # Build Model and keep model fitting slient
+        start_time = time.time()
+        self.build_model(keras_verbose=0)
+        build_model_time = time.time() - start_time
 
-    destination_file.close()
-    
+        # Transform Full Model to Attention, Encoder and Decoder model
+        start_time = time.time()
+        self.transform_model()
+        transform_model_time = time.time() - start_time
+
+        # Predict Data
+        start_time = time.time()
+        pred = self.predict_data()
+        prediction_time = time.time() - start_time
+
+        offset_list, mse = self.calculate_diff_error(pred)
+
+        # Getting Model Size in MB (convert from byte)
+        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
+        encoder_model_size = os.stat(self.__encoder_model_path).st_size / 10**6
+        decoder_model_size = os.stat(self.__decoder_model_path).st_size / 10**6
+        attention_model_size = os.stat(self.__attention_model_path).st_size / 10**6
+
+        # Getting number of epoch and encoder accuracy
+        training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
+        encoder_epoch = int(training_hist.epoch)
+        encoder_accuracy = training_hist.accuracy
+
+        print('\nExperiment Done in ', load_data_time + build_model_time + transform_model_time + prediction_time, 'sec(s)')
+        print('Load Data Time', load_data_time, 'sec(s)')
+        print('Build Model Time', build_model_time, 'sec(s) (' , build_model_time/encoder_epoch, 'sec/epoch)')
+        print('Transform Model Time', transform_model_time)
+        print('Prediction Time', prediction_time, 'sec(s) (', prediction_time /  self.__configuration.seq_num, ' sec/read)')
+
+        print('\nEncoder Model')
+        print('Epoch:', encoder_epoch)
+        print('Accuracy:', encoder_accuracy)
+        print('Final Prediction MSE:', mse)
+
+        print('\nModel Sizes')
+        print('Full Model Size:', full_model_size, 'MB')
+        print('Encoder Model Size:', encoder_model_size, 'MB')
+        print('Decoder Model Size:', decoder_model_size, 'MB')
+        print('Attention Model Size:', attention_model_size, 'MB')
+
+        print('\nResult File Path')
+        print('Training Hist Path:', self.__training_hist_path)
+        print('Predicted Offset Path:', self.__array_diff_path)
+        print('MSE Log Path:', self.__mse_log_path)
+        print('Full Model Path:', self.__full_model_path)
+        print('Encoder Model Path:', self.__encoder_model_path)
+        print('Decoder Model Path:', self.__decoder_model_path)
+        print('Attention Model Path:', self.__attention_model_path)
+
+    def predict_only (self, full_model_path: str) :
+        # Report Configuration
+        print('Running ', self.__experiment_name, 'with the following configuration')
+        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
+        print('latent_dim:', self.__configuration.latent_dim)
+        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
+        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
+        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
+        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
+        print('base_learning_rate:', self.__configuration.base_learning_rate)
+
+        if self.__configuration.batch_size < 1 :    
+            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
+        else :
+            print('batch_size:', self.__configuration.batch_size)
+
+        print('loss:', str(self.__configuration.loss), '\n')
+        
+        # Load Data
+        start_time = time.time()
+        self.load_data()
+        load_data_time = time.time() - start_time
+        print('Load data done in', load_data_time, 'sec(s)')
+
+        # Load Model from existing file
+        start_time = time.time()
+        self.load_full_model(full_model_path)
+        model_loading_time = time.time() - start_time
+        print('Load model done in', model_loading_time, 'sec(s)')
+
+        # Transform Full Model to Attention, Encoder and Decoder model
+        start_time = time.time()
+        self.transform_model()
+        transform_model_time = time.time() - start_time
+        print('transform model done in', transform_model_time)
+
+        # Predict Data
+        start_time = time.time()
+        pred = self.predict_data()
+        prediction_time = time.time() - start_time
+        print('Predict done in', prediction_time, 'sec(s) (', prediction_time /  self.__configuration.seq_num, ' sec/read)')
+
+        offset_list, mse = self.calculate_diff_error(pred)
+
+        # Getting Model Size in MB (convert from byte)
+        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
+        encoder_model_size = os.stat(self.__encoder_model_path).st_size / 10**6
+        decoder_model_size = os.stat(self.__decoder_model_path).st_size / 10**6
+        attention_model_size = os.stat(self.__attention_model_path).st_size / 10**6
+
+        print('\nExperiment Done in ', load_data_time + model_loading_time + transform_model_time + prediction_time, 'sec(s)')
+
+        print('\nEncoder Model')
+        print('Final Prediction MSE:', mse)
+
+        print('\nModel Sizes')
+        print('Full Model Size:', full_model_size, 'MB')
+        print('Encoder Model Size:', encoder_model_size, 'MB')
+        print('Decoder Model Size:', decoder_model_size, 'MB')
+        print('Attention Model Size:', attention_model_size, 'MB')
+
+        print('\nResult File Path')
+        print('Predicted Offset Path:', self.__array_diff_path)
+        print('MSE Log Path:', self.__mse_log_path)
+        print('Full Model Path:', self.__full_model_path)
+        print('Encoder Model Path:', self.__encoder_model_path)
+        print('Decoder Model Path:', self.__decoder_model_path)
+        print('Attention Model Path:', self.__attention_model_path)
+        
 def main(args) :
     feature_file = args[1]
-    training_hist_path = args[2]
-    model_path = args[3]
-    predicted_diff_path = args[4]
-    mse_progress = args[5]
-    experiment_name = args[6]
-
-    print("Experiment Name", experiment_name)
-
-    model_full_path = model_path + '/' + experiment_name + '.h5'
-    encoder_model_full_path = model_path + '/' + experiment_name + '_encoder.h5'
-    decoder_model_full_path = model_path + '/' + experiment_name + '_decoder.h5'
-    attention_model_full_path = model_path + '/' + experiment_name + '_attention.h5'
-
-    array_diff_full_file_name = predicted_diff_path + '/' + experiment_name + '.diff'
-    mse_log_full_file_name = mse_progress + '/' + experiment_name + '_MSE.csv'
-
-    configuration = Configuration(
-        experiment_name = experiment_name,
+    
+    # Sample Experiment 
+    sample_experiment = BidirectionalDotAttentionSeq2SeqExperimentBuilder (
+        feature_file_path = args[1],
+        configuration = Configuration(
         latent_dim=128,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
         num_decoder_embed = 32,
-        seq_num= 30000,
+        seq_num= 10000,
         seq_len = 90,
         base_learning_rate=0.001,
-        batch_size=int(10000 * 0.01),
+        batch_size=0.01,
         loss='sparse_categorical_crossentropy'
+        )
     )
 
-    # Load Dataset
-    encoder_input_data, decoder_input_data, decoder_target_data = load_data(feature_file, configuration)
+    # Easier method -> run whole pipeline
+    sample_experiment.run()
+
+    # Got the full model ? -> Predict only option
+    # sample_experiment.predict_only(<Model Path>)
+    
+    # Loading Dataset
+    # sample_experiment.load_data()
 
     # Build Full Model
-    full_model = build_bidirectional_dot_attention_seq2seq_model(configuration, model_full_path, training_hist_path, encoder_input_data, decoder_input_data, decoder_target_data)
-    full_model.save(model_full_path)
+    # sample_experiment.build_model()
 
-    # Transform full model to attention, encoder and decoder model
-    encoder_model, decoder_model, attention_model = transform_model(full_model , configuration)
-    
-    encoder_model.save(encoder_model_full_path)
-    decoder_model.save(decoder_model_full_path)
-    attention_model.save(attention_model_full_path)
+    # If full model is existed -> you can load the full model instead via
+    # sample_experiment.load_full_model(<Full Model Path>)
 
-    # Predict data
-    pred = predict_bidirectional_dot_attention_seq2seq_batch (encoder_input_data=encoder_input_data, encoder_model=encoder_model, decoder_model=decoder_model, attention_model=attention_model, configuration = configuration)
-    offset_list, mse = calculate_diff_from_np(pred, decoder_target_data, mse_progress + '/' + experiment_name + '_MSE.csv')
-    write_offset_to_file(offset_list, predicted_diff_path + '/' + experiment_name + '.diff')
-    
+    # Transform Full Model to Attention, Encoder and Decoder model
+    # sample_experiment.transform_model()
+
+    # Predict Data
+    # pred = sample_experiment.predict_data()
+
+    # Calculate offset between actual and predicted data and mse log -> write to file
+    # offset_list, mse = sample_experiment.calculate_diff_error(pred)
+
 if __name__ == "__main__":
     main(sys.argv)
