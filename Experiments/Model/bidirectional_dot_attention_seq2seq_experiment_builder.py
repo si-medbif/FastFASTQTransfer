@@ -34,12 +34,6 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         self.__experiment_name_prefix = experiment_name_prefix
         self.__experiment_name = self.__generate_experiment_name()
 
-        # Model Obj
-        self.__full_model = None
-        self.__encoder_model = None
-        self.__decoder_model = None
-        self.__attention_model = None
-
         # Path Init
         self.__base_training_hist_path = training_hist_base_path
         self.__training_hist_path = training_hist_base_path + '/' + self.__experiment_name + '.model_hist'
@@ -58,45 +52,6 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         self.decoder_target_data = None
 
         print(self.__experiment_name, ' has been created')
-
-    # Name and Path Generator (Need static getter <- Don't want modified path)
-    def __generate_experiment_name (self) -> str :
-        if self.__configuration.batch_size < 1 :
-            batch_size_in_name = 'm' + str(self.__configuration.batch_size).replace('.', '-')
-        else :
-            batch_size_in_name = str(self.__configuration.batch_size)
-
-        return self.__experiment_name_prefix + '_L' + str(self.__configuration.latent_dim) + '_E' + str(self.__configuration.num_decoder_embed) + '_Lr' + str(self.__configuration.base_learning_rate).replace('.', '-') + '_BS' + batch_size_in_name + '_' + str(self.__configuration.seq_num)
-
-    def get_experiment_name (self) -> str :
-        return self.__experiment_name
-
-    def get_training_hist_path (self) -> str:
-        return self.__training_hist_path
-    
-    def get_array_diff_path (self) -> str :
-        return self.__array_diff_path
-    
-    def get_mse_progress_path (self) -> str :
-        return self.__mse_log_path
-
-    # Model Setter
-    def load_full_model (self, full_model_path: str) -> None:
-        self.__full_model_path = full_model_path
-        self.__full_model = load_model(self.__full_model_path)
-
-    # Model Getters
-    def get_full_model (self) -> Model:
-        return self.__full_model
-    
-    def get_encoder_model (self) -> Model:
-        return self.__encoder_model
-    
-    def get_decoder_model (self) -> Model:
-        return self.__decoder_model
-    
-    def get_attention_model (self) -> Model:
-        return self.__attention_model
 
     # Utilities Functions
     def __get_real_batch_size (self) -> int :
@@ -489,7 +444,7 @@ def main(args) :
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
-        num_decoder_embed = 32,
+        num_decoder_embed = 1024,
         seq_num= 10000,
         seq_len = 90,
         base_learning_rate=0.001,
@@ -499,10 +454,11 @@ def main(args) :
     )
 
     # Easier method -> run whole pipeline
-    sample_experiment.run()
+    # sample_experiment.run()
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
+    sample_experiment.predict_only('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L128_E1024_Lr0-001_BSm0-01_10000.h5')
     
     # Loading Dataset
     # sample_experiment.load_data()
@@ -521,6 +477,6 @@ def main(args) :
 
     # Calculate offset between actual and predicted data and mse log -> write to file
     # offset_list, mse = sample_experiment.calculate_diff_error(pred)
-
+    
 if __name__ == "__main__":
     main(sys.argv)
