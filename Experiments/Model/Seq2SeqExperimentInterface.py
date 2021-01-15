@@ -1,28 +1,41 @@
+import numpy as np
 from tensorflow.keras.models import load_model
+from tensorflow.keras import Model
+from Configuration import Configuration
 
 class Seq2SeqExperimentInterface :
 
-    __experiment_name_prefix: str = 'Seq2_Seq_Untitled'
-    __experiment_name: str = ''
-    __base_training_hist_path: str = ''
-    __training_hist_path: str = ''
-    __array_diff_path: str = ''
-    __mse_log_path: str = ''
-
-    __full_model_path: str = ''
-    __encoder_model_path: str = ''
-    __decoder_model_path: str = ''
-    __attention_model_path: str = ''
-
-
     # Model Obj
-    self.__full_model = None
-    self.__encoder_model = None
-    self.__decoder_model = None
-    self.__attention_model = None  
+    __full_model = None
+    __encoder_model = None
+    __decoder_model = None
+    __attention_model = None  
+
+    def __init__ (self, configuration : Configuration, 
+        training_hist_base_path : str = 'Results/model_experiment/training_stat/seq2seq', 
+        model_base_path: str = 'Results/model_experiment/model/seq2seq', 
+        array_diff_base_path: str = 'Results/model_experiment/predicted_diff', 
+        mse_log_base_path: str = 'Results/model_experiment/mse_log',
+        experiment_name_prefix: str = 'Seq2_Seq_Untitled') -> None:
+
+        self.__experiment_name_prefix = experiment_name_prefix
+        self.__configuration = configuration
+        self.__experiment_name = self.__generate_experiment_name()
+
+        # Path Init
+        self.__base_training_hist_path = training_hist_base_path
+        self.__training_hist_path = training_hist_base_path + '/' + self.__experiment_name + '.model_hist'
+        self.__array_diff_path = array_diff_base_path + '/' + self.__experiment_name + '.diff'
+        self.__mse_log_path = mse_log_base_path + '/' + self.__experiment_name + '_MSE.csv'
+
+        self.__full_model_path = model_base_path + '/' + self.__experiment_name + '.h5'
+        self.__encoder_model_path = model_base_path + '/' + self.__experiment_name + '_encoder.h5'
+        self.__decoder_model_path = model_base_path + '/' + self.__experiment_name + '_decoder.h5'
+        self.__attention_model_path = model_base_path + '/' + self.__experiment_name + '_attention.h5'
 
     # Name and Path Generator (Need static getter <- Don't want modified path)
     def __generate_experiment_name (self) -> str :
+        print(self.__configuration.latent_dim)
         if self.__configuration.batch_size < 1 :
             batch_size_in_name = 'm' + str(self.__configuration.batch_size).replace('.', '-')
         else :
@@ -30,7 +43,28 @@ class Seq2SeqExperimentInterface :
 
         return self.__experiment_name_prefix + '_L' + str(self.__configuration.latent_dim) + '_E' + str(self.__configuration.num_decoder_embed) + '_Lr' + str(self.__configuration.base_learning_rate).replace('.', '-') + '_BS' + batch_size_in_name + '_' + str(self.__configuration.seq_num)
 
-    # Config Getter
+    # Getter Function
+    def __get_training_hist_path (self) -> str:
+        return self.__training_hist_path
+    
+    def __get_array_diff_path (self) -> str:
+        return self.__array_diff_path
+    
+    def __get_mse_log_path (self) -> str:
+        return self.__mse_log_path
+    
+    def __get_full_model_path (self) -> str:
+        return self.__full_model_path
+    
+    def __get_encoder_model_path (self) -> str:
+        return self.__encoder_model_path
+    
+    def __get_decoder_path (self) -> str:
+        return self.__decoder_model_path
+    
+    def __get_attention_model_path (self) -> str:
+        return self.__attention_model_path
+
     def get_experiment_name (self) -> str :
         return self.__experiment_name
 
@@ -61,30 +95,25 @@ class Seq2SeqExperimentInterface :
     def get_attention_model (self) -> Model:
         return self.__attention_model
 
-    @abstractmethod
+    # Abstract Methods
+
     def load_data (self) -> None :
         pass
 
-    @abstrctmethod
     def build_model (self, keras_verbose=1) -> None :
         pass
 
-    @abstrctmethod
     def transform_model (self) -> None :
         pass
 
-    @abstractmethod
     def predict_data (self) -> np.array :
         pass
     
-    @abstractmethod
     def calculate_diff_error (self, pred_np: np.ndarray) -> (list, int) :
         pass
 
-    @abstractmethod
     def run (self) -> None:
         pass
 
-    @abstractmethod
     def predict_only (self, full_model_path: str) :
         pass
