@@ -11,6 +11,7 @@ from tensorflow.keras.layers import LSTM, Dense, Embedding, Bidirectional, Conca
 from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import RMSprop
 
+from Seq2SeqExperimentInterface import Seq2SeqExperimentInterface
 from typing import Any
 from utilities import load_seq2_seq_data, generate_training_statistic_file
 from Configuration import Configuration
@@ -20,7 +21,7 @@ from CustomCallbacks import WarmUpReduceLROnPlateau
 # INPUT: Feature File Path
 # OUTPUT: History File, Model File, Array Diff Result
 
-class BidirectionalDotAttentionSeq2SeqExperimentBuilder :
+class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterface) :
     def __init__ (self, configuration : Configuration, feature_file_path: str, 
     training_hist_base_path : str = 'Results/model_experiment/training_stat/seq2seq', 
     model_base_path: str = 'Results/model_experiment/model/seq2seq', 
