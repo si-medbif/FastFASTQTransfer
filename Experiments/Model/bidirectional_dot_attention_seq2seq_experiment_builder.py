@@ -29,10 +29,12 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
     mse_log_base_path: str = 'Results/model_experiment/mse_log',
     experiment_name_prefix: str = 'Seq2Seq_Bidirectional_DotAttention') -> None:
 
+        super().__init__(configuration, experiment_name_prefix=experiment_name_prefix)
+
         # Init Config and Experiment Name
         self.__configuration = configuration
         self.__experiment_name_prefix = experiment_name_prefix
-        self.__experiment_name = self.__generate_experiment_name()
+        self.__experiment_name = super().get_experiment_name()
 
         # Path Init
         self.__base_training_hist_path = training_hist_base_path
@@ -68,6 +70,10 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
             destination_file.write(str(read)[1:-1].replace(' ', '') + '\n')
 
         destination_file.close()
+
+    def load_full_model (self, full_model_path: str) -> None:
+        self.__full_model_path = full_model_path
+        self.__full_model = load_model(self.__full_model_path)
 
     # Sub-Pipeline functions
 
@@ -257,7 +263,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         
         return results
 
-    def calculate_diff_error (self, pred_np: np.ndarray) -> (list, int) :
+    def calculate_diff_error (self, pred_np: np.ndarray) -> (list, int, float) :
         mse_log_file = open(self.__mse_log_path, 'w')
 
         # Pred Shape,Decoder Target Data  (n_read, seq_len)
@@ -265,6 +271,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         seq_len = min(pred_np.shape[1], self.__decoder_target_data.shape[1])
 
         accum_sigma_distance = 0
+        accuracy_corrent_answer_counter = 0
 
         offset_list = list()
 
@@ -272,19 +279,21 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
             current_pred = pred_np[read_no, :]
             current_target = self.__decoder_target_data[read_no, :]
             diff = np.subtract(current_target, current_pred).astype(int)
-
             offset_list.append(diff.tolist())
+            accuracy_corrent_answer_counter += diff.tolist().count(0)
             
             accum_sigma_distance += np.sum(np.power(diff, 2))
             n_of_data = (read_no+1) * seq_len
             mse = (1/n_of_data) * accum_sigma_distance
             mse_log_file.write(str(mse) + '\n')
+
+            accuracy = accuracy_corrent_answer_counter / n_of_data
         
         mse_log_file.close()
 
         self.__write_offset_to_file(offset_list)
 
-        return offset_list, mse
+        return offset_list, mse, accuracy
     
     # Run full pipeline and report the result
     def run (self) -> None:
@@ -325,7 +334,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         pred = self.predict_data()
         prediction_time = time.time() - start_time
 
-        offset_list, mse = self.calculate_diff_error(pred)
+        offset_list, mse, accuracy = self.calculate_diff_error(pred)
 
         # Getting Model Size in MB (convert from byte)
         full_model_size = os.stat(self.__full_model_path).st_size / 10**6
@@ -348,6 +357,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         print('Epoch:', encoder_epoch)
         print('Accuracy:', encoder_accuracy)
         print('Final Prediction MSE:', mse)
+        print('Final Accuracy:', accuracy)
 
         print('\nModel Sizes')
         print('Full Model Size:', full_model_size, 'MB')
@@ -406,7 +416,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         prediction_time = time.time() - start_time
         print('Predict done in', prediction_time, 'sec(s) (', prediction_time /  self.__configuration.seq_num, ' sec/read)')
 
-        offset_list, mse = self.calculate_diff_error(pred)
+        offset_list, mse, accuracy = self.calculate_diff_error(pred)
 
         # Getting Model Size in MB (convert from byte)
         full_model_size = os.stat(self.__full_model_path).st_size / 10**6
@@ -418,6 +428,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
 
         print('\nEncoder Model')
         print('Final Prediction MSE:', mse)
+        print('Final Accuracy:', accuracy)
 
         print('\nModel Sizes')
         print('Full Model Size:', full_model_size, 'MB')
@@ -440,15 +451,15 @@ def main(args) :
     sample_experiment = BidirectionalDotAttentionSeq2SeqExperimentBuilder (
         feature_file_path = args[1],
         configuration = Configuration(
-        latent_dim=128,
+        latent_dim=256,
         num_encoder_tokens = 5,
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
-        num_decoder_embed = 1024,
-        seq_num= 10000,
+        num_decoder_embed = 32,
+        seq_num= 90000,
         seq_len = 90,
         base_learning_rate=0.001,
-        batch_size=0.01,
+        batch_size=0.001,
         loss='sparse_categorical_crossentropy'
         )
     )
@@ -458,7 +469,7 @@ def main(args) :
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
-    sample_experiment.predict_only('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L128_E1024_Lr0-001_BSm0-01_10000.h5')
+    sample_experiment.predict_only('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L256_E32_Lr0-001_BSm0-001_90000.h5')
     
     # Loading Dataset
     # sample_experiment.load_data()
@@ -476,7 +487,7 @@ def main(args) :
     # pred = sample_experiment.predict_data()
 
     # Calculate offset between actual and predicted data and mse log -> write to file
-    # offset_list, mse = sample_experiment.calculate_diff_error(pred)
+    # offset_list, mse, accuracy = sample_experiment.calculate_diff_error(pred)
     
 if __name__ == "__main__":
     main(sys.argv)

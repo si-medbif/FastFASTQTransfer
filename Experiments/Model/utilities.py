@@ -100,6 +100,26 @@ def calculate_accuracy (pred : list, actual: list) :
   
   return no_of_corrent/no_of_item
 
+def calculate_accuracy_from_diff_file (diff_file_path: str) -> float :
+  diff_file = open(diff_file_path, 'r')
+
+  n_corrent = 0
+  n_base = 0
+
+  line = diff_file.readline()
+
+  while line != '' :
+    line_items = line[:-1].split(',')
+    line_items = [int(item) for item in line_items]
+    n_corrent += line_items.count(0)
+    n_base += len(line_items)
+
+    line = diff_file.readline()
+
+  diff_file.close()
+
+  return n_corrent/n_base
+  
 def offset_distribution_finder (diff_file_path: str) -> (dict, int, int) :
   diff_file = open(diff_file_path, 'r')
 
