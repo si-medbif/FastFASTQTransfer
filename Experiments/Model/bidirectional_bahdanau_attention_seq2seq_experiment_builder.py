@@ -457,7 +457,7 @@ def main(args) :
         seq_num= 10000,
         seq_len = 90,
         base_learning_rate=0.001,
-        batch_size=0.01,
+        batch_size=100,
         loss='sparse_categorical_crossentropy'
         )
     )
