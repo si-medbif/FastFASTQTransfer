@@ -113,6 +113,24 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         self.__decoder_target_data = decoder_target_data
         self.__decoder_input_data = decoder_input_data
 
+    def __report_configuration (self) -> None :
+        # Report Configuration
+        print('Running ', self.__experiment_name, 'with the following configuration')
+        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
+        print('latent_dim:', self.__configuration.latent_dim)
+        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
+        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
+        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
+        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
+        print('base_learning_rate:', self.__configuration.base_learning_rate)
+
+        if self.__configuration.batch_size < 1 :    
+            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
+        else :
+            print('batch_size:', self.__configuration.batch_size)
+
+        print('loss:', str(self.__configuration.loss), '\n')
+
     def build_model (self, keras_verbose=1) -> None :
         # Load the data when there is no data in the obj
         if self.__encoder_input_data is None or self.__decoder_input_data is None or self.__decoder_target_data is None:
@@ -298,21 +316,7 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
     # Run full pipeline and report the result
     def run (self) -> None:
         # Report Configuration
-        print('Running ', self.__experiment_name, 'with the following configuration')
-        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
-        print('latent_dim:', self.__configuration.latent_dim)
-        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
-        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
-        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
-        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
-        print('base_learning_rate:', self.__configuration.base_learning_rate)
-
-        if self.__configuration.batch_size < 1 :    
-            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
-        else :
-            print('batch_size:', self.__configuration.batch_size)
-
-        print('loss:', str(self.__configuration.loss), '\n')
+        self.__report_configuration()
         
         # Load Data
         start_time = time.time()
@@ -373,6 +377,37 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         print('Encoder Model Path:', self.__encoder_model_path)
         print('Decoder Model Path:', self.__decoder_model_path)
         print('Attention Model Path:', self.__attention_model_path)
+
+    def train_only (self) -> None :
+        # Report Configuration
+        self.__report_configuration()
+        
+        # Load Data
+        start_time = time.time()
+        self.load_data()
+        load_data_time = time.time() - start_time
+
+        # Build Model and keep model fitting slient
+        start_time = time.time()
+        self.build_model(keras_verbose=0)
+        build_model_time = time.time() - start_time
+
+        # Getting number of epoch and encoder accuracy
+        training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
+        encoder_epoch = int(training_hist.epoch)
+        encoder_accuracy = training_hist.accuracy
+
+        print('\nExperiment Done in ', load_data_time + build_model_time + 'sec(s)')
+        print('Load Data Time', load_data_time, 'sec(s)')
+        print('Build Model Time', build_model_time, 'sec(s) (' , build_model_time/encoder_epoch, 'sec/epoch)')
+
+        print('\nEncoder Model')
+        print('Epoch:', encoder_epoch)
+        print('Accuracy:', encoder_accuracy)
+
+        print('\nResult File Path')
+        print('Training Hist Path:', self.__training_hist_path)
+        print('Full Model Path:', self.__full_model_path)
 
     def predict_only (self, full_model_path: str) :
         # Report Configuration

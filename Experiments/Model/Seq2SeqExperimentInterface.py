@@ -44,25 +44,25 @@ class Seq2SeqExperimentInterface :
         return self.__experiment_name_prefix + '_L' + str(self.__configuration.latent_dim) + '_E' + str(self.__configuration.num_decoder_embed) + '_Lr' + str(self.__configuration.base_learning_rate).replace('.', '-') + '_BS' + batch_size_in_name + '_' + str(self.__configuration.seq_num)
 
     # Getter Function
-    def __get_training_hist_path (self) -> str:
+    def get_training_hist_path (self) -> str:
         return self.__training_hist_path
     
-    def __get_array_diff_path (self) -> str:
+    def get_array_diff_path (self) -> str:
         return self.__array_diff_path
     
-    def __get_mse_log_path (self) -> str:
+    def get_mse_log_path (self) -> str:
         return self.__mse_log_path
     
-    def __get_full_model_path (self) -> str:
+    def get_full_model_path (self) -> str:
         return self.__full_model_path
     
-    def __get_encoder_model_path (self) -> str:
+    def get_encoder_model_path (self) -> str:
         return self.__encoder_model_path
     
-    def __get_decoder_path (self) -> str:
+    def get_decoder_path (self) -> str:
         return self.__decoder_model_path
     
-    def __get_attention_model_path (self) -> str:
+    def get_attention_model_path (self) -> str:
         return self.__attention_model_path
 
     def get_experiment_name (self) -> str :
