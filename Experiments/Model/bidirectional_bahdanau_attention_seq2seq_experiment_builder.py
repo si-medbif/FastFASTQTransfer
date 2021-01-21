@@ -557,10 +557,10 @@ def main(args) :
     )
 
     # Easier method -> run whole pipeline
-    # sample_experiment.run()
+    sample_experiment.run()
 
     # Just Fit the model
-    sample_experiment.train_only()
+    # sample_experiment.train_only()
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
