@@ -43,6 +43,14 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
 
             print(self.__experiment_name, ' has been created')
 
+    # Utilities Functions
+    def __get_real_batch_size (self) -> int :
+        # If Batch Size is multiply so input as decimal
+        if self.__configuration.batch_size < 1 :
+            return int(self.__configuration.batch_size * self.__configuration.seq_num)
+        else :
+            return self.__configuration.batch_size
+
     def load_data (self) -> None :
         feature_file = open(self.__feature_file_path, 'r')
 
@@ -116,7 +124,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         training_hist = model.fit(
             [self.encoder_input_data, self.decoder_input_data],
             self.decoder_target_data,
-            batch_size=self.__configuration.batch_size,
+            batch_size=self.__get_real_batch_size(),
             epochs=1000,
             callbacks=[reduce_lr,earlystop_callback,model_checkpoint_callback]
         )
@@ -251,7 +259,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         return offset_list, mse
 
     def run (self) -> None:
-                # Report Configuration
+        # Report Configuration
         print('Running ', self.__experiment_name, 'with the following configuration')
         print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
         print('latent_dim:', self.__configuration.latent_dim)
@@ -443,11 +451,11 @@ class BahdanauAttentionLayer(Layer):
         ]
 
 def main(args) :
-    feature_file = args[1]
+    feature_file_path = args[1]
     
     # Sample Experiment 
     sample_experiment = BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (
-        feature_file_path = args[1],
+        feature_file_path = feature_file_path,
         configuration = Configuration(
         latent_dim=128,
         num_encoder_tokens = 5,
@@ -463,7 +471,7 @@ def main(args) :
     )
 
     # Easier method -> run whole pipeline
-    # sample_experiment.run()
+    sample_experiment.run()
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
