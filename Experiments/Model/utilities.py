@@ -39,10 +39,16 @@ def load_seq2_seq_data (feature_file_path: str, configuration: Configuration) :
     return encoder_input_data, decoder_input_data, decoder_target_data, raw_score_data
 
 def generate_training_statistic_file (training_history, experiment_name, destination_file_path = 'Results/model_experiment/training_stat') : 
+    # If path is full path, we gonna use original one
+    if len(destination_file_path.split('/')[-1].split('.')) > 1 :
+      destination = destination_file_path
+    else :
+      destination = destination_file_path + '/' + experiment_name + '.model_hist'
+
     # Dump History to File
     result_df = pd.DataFrame(training_history.history)
     result_df['epoch'] = [i+1 for i in range(len(result_df))]
-    result_df.to_csv(destination_file_path + '/' + experiment_name + '.model_hist', index=False)
+    result_df.to_csv(destination, index=False)
 
 def plot_loss_acc_to_file (training_history, experiment_name, loss_chart_path='.', accuracy_chart_path='.') :
     # Loss Plot
