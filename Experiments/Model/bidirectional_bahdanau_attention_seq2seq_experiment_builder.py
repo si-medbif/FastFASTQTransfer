@@ -51,6 +51,24 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         else :
             return self.__configuration.batch_size
 
+    def __report_configuration (self) -> None :
+        # Report Configuration
+        print('Running ', self.__experiment_name, 'with the following configuration')
+        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
+        print('latent_dim:', self.__configuration.latent_dim)
+        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
+        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
+        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
+        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
+        print('base_learning_rate:', self.__configuration.base_learning_rate)
+
+        if self.__configuration.batch_size < 1 :    
+            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
+        else :
+            print('batch_size:', self.__configuration.batch_size)
+
+        print('loss:', str(self.__configuration.loss), '\n')
+
     def load_data (self) -> None :
         feature_file = open(self.__feature_file_path, 'r')
 
@@ -116,7 +134,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
 
         reduce_lr = WarmUpReduceLROnPlateau(monitor='loss', factor=0.2, patience=5, min_lr=0, init_lr = self.__configuration.base_learning_rate, warmup_batches = self.__configuration.count_train * 5, min_delta = 0.001)
         earlystop_callback = EarlyStopping(monitor='loss', min_delta=0.00001, patience=16)
-        model_checkpoint_callback = ModelCheckpoint(filepath=super().__get_full_model_path(), monitor='accuracy', mode='max', save_weights_only= True, save_best_only=True)
+        model_checkpoint_callback = ModelCheckpoint(filepath=super().get_full_model_path(), monitor='accuracy', mode='max', save_weights_only= True, save_best_only=True)
 
         # Compile and fit the model
         model.compile(optimizer=RMSprop(lr=self.__configuration.base_learning_rate), loss=self.__configuration.loss, metrics=["accuracy"])
@@ -130,7 +148,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         )
 
         # Save training stat to file
-        generate_training_statistic_file(training_hist, self.__experiment_name, destination_file_path = super().__get_training_hist_path())
+        generate_training_statistic_file(training_hist, self.__experiment_name, destination_file_path = super().get_training_hist_path())
 
         self.__full_model = model
 
@@ -230,7 +248,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         return results
     
     def calculate_diff_error (self, pred_np: np.ndarray) -> (list, int) :
-        mse_log_file = open(super().__get_mse_log_path(), 'w')
+        mse_log_file = open(super().get_mse_log_path(), 'w')
 
         # Pred Shape,Decoder Target Data  (n_read, seq_len)
         seq_num = min(pred_np.shape[0], self.__decoder_target_data.shape[0])
@@ -260,21 +278,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
 
     def run (self) -> None:
         # Report Configuration
-        print('Running ', self.__experiment_name, 'with the following configuration')
-        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
-        print('latent_dim:', self.__configuration.latent_dim)
-        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
-        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
-        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
-        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
-        print('base_learning_rate:', self.__configuration.base_learning_rate)
-
-        if self.__configuration.batch_size < 1 :    
-            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
-        else :
-            print('batch_size:', self.__configuration.batch_size)
-
-        print('loss:', str(self.__configuration.loss), '\n')
+        self.__report_configuration()
         
         # Load Data
         start_time = time.time()
@@ -335,8 +339,90 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         print('Decoder Model Path:', self.__decoder_model_path)
         print('Attention Model Path:', self.__attention_model_path)
 
-    def predict_only (self, full_model_path: str) :
-        pass
+    def train_only (self) -> None :
+        # Report Configuration
+        self.__report_configuration()
+
+        # Load Data
+        start_time = time.time()
+        self.load_data()
+        load_data_time = time.time() - start_time
+        print('Load data done in', load_data_time, 'sec(s)')
+
+        # Build Model and keep model fitting slient
+        start_time = time.time()
+        self.build_model(keras_verbose=0)
+        build_model_time = time.time() - start_time
+
+        # Getting Model Size in MB (convert from byte)
+        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
+
+        # Getting number of epoch and encoder accuracy
+        training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
+        encoder_epoch = int(training_hist.epoch)
+        encoder_accuracy = training_hist.accuracy
+
+        print('\n' + super().get_experiment_name())
+        print('Experiment Done in ', load_data_time + build_model_time, 'sec(s)')
+        print('Load Data Time', load_data_time, 'sec(s)')
+        print('Build Model Time', build_model_time, 'sec(s) (' , build_model_time/encoder_epoch, 'sec/epoch)')
+        
+
+    def predict_only (self, full_model_path: str) -> None:
+        # Report Configuration
+        self.__report_configuration()
+
+        # Load Data
+        start_time = time.time()
+        self.load_data()
+        load_data_time = time.time() - start_time
+        print('Load data done in', load_data_time, 'sec(s)')
+
+        # Load Model from existing file
+        start_time = time.time()
+        self.load_full_model(full_model_path)
+        model_loading_time = time.time() - start_time
+        print('Load model done in', model_loading_time, 'sec(s)')
+
+        # Transform Full Model to Attention, Encoder and Decoder model
+        start_time = time.time()
+        self.transform_model()
+        transform_model_time = time.time() - start_time
+        print('transform model done in', transform_model_time)
+
+        # Predict Data
+        start_time = time.time()
+        pred = self.predict_data()
+        prediction_time = time.time() - start_time
+        print('Predict done in', prediction_time, 'sec(s) (', prediction_time /  self.__configuration.seq_num, ' sec/read)')
+
+        offset_list, mse, accuracy = self.calculate_diff_error(pred)
+
+        # Getting Model Size in MB (convert from byte)
+        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
+        encoder_model_size = os.stat(self.__encoder_model_path).st_size / 10**6
+        decoder_model_size = os.stat(self.__decoder_model_path).st_size / 10**6
+        attention_model_size = os.stat(self.__attention_model_path).st_size / 10**6
+
+        print('\nExperiment Done in ', load_data_time + model_loading_time + transform_model_time + prediction_time, 'sec(s)')
+
+        print('\nEncoder Model')
+        print('Final Prediction MSE:', mse)
+        print('Final Accuracy:', accuracy)
+
+        print('\nModel Sizes')
+        print('Full Model Size:', full_model_size, 'MB')
+        print('Encoder Model Size:', encoder_model_size, 'MB')
+        print('Decoder Model Size:', decoder_model_size, 'MB')
+        print('Attention Model Size:', attention_model_size, 'MB')
+
+        print('\nResult File Path')
+        print('Predicted Offset Path:', self.__array_diff_path)
+        print('MSE Log Path:', self.__mse_log_path)
+        print('Full Model Path:', self.__full_model_path)
+        print('Encoder Model Path:', self.__encoder_model_path)
+        print('Decoder Model Path:', self.__decoder_model_path)
+        print('Attention Model Path:', self.__attention_model_path)
 
 class BahdanauAttentionLayer(Layer):
     """
@@ -471,7 +557,10 @@ def main(args) :
     )
 
     # Easier method -> run whole pipeline
-    sample_experiment.run()
+    # sample_experiment.run()
+
+    # Just Fit the model
+    sample_experiment.train_only()
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
