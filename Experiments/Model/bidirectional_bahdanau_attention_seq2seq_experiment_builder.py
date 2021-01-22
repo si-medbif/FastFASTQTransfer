@@ -37,9 +37,9 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
 
             # Input Data Init
             self.__feature_file_path = feature_file_path
-            self.encoder_input_data = None
-            self.decoder_input_data = None
-            self.decoder_target_data = None
+            self.__encoder_input_data = None
+            self.__decoder_input_data = None
+            self.__decoder_target_data = None
 
             print(self.__experiment_name, ' has been created')
 
@@ -50,6 +50,14 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
             return int(self.__configuration.batch_size * self.__configuration.seq_num)
         else :
             return self.__configuration.batch_size
+
+    def __write_offset_to_file (self, offset:list) -> None :
+        offset_file = open(super().get_array_diff_path(),'w')
+
+        for line in offset :
+            offset_file.write(str(line).replace('[','').replace(']',''))
+        
+        offset_file.close()
 
     def __report_configuration (self) -> None :
         # Report Configuration
@@ -99,9 +107,9 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         decoder_target_data = np.array(decoder_target_data,dtype="float32")
         decoder_input_data = np.concatenate([np.ones((decoder_target_data.shape[0],1))*41.,decoder_target_data[:,:-1]],axis = -1)
 
-        self.encoder_input_data = encoder_input_data
-        self.decoder_input_data = decoder_input_data
-        self.decoder_target_data = decoder_target_data
+        self.__encoder_input_data = encoder_input_data
+        self.__decoder_input_data = decoder_input_data
+        self.__decoder_target_data = decoder_target_data
 
     def build_model (self, keras_verbose=1) -> None :
 
@@ -140,8 +148,8 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         model.compile(optimizer=RMSprop(lr=self.__configuration.base_learning_rate), loss=self.__configuration.loss, metrics=["accuracy"])
     
         training_hist = model.fit(
-            [self.encoder_input_data, self.decoder_input_data],
-            self.decoder_target_data,
+            [self.__encoder_input_data, self.__decoder_input_data],
+            self.__decoder_target_data,
             batch_size=self.__get_real_batch_size(),
             epochs=1000,
             callbacks=[reduce_lr,earlystop_callback,model_checkpoint_callback]
@@ -202,6 +210,11 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         self.__encoder_model = encoder_model
         self.__decoder_model = decoder_model
         self.__attention_model = attention_model
+
+        # Save models to file
+        encoder_model.save(super().get_encoder_model_path())
+        decoder_model.save(super().get_decoder_model_path())
+        attention_model.save(super().get_attention_model_path())
 
     def predict_data (self) -> np.array :
         if self.__encoder_input_data is None :  
@@ -309,7 +322,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         attention_model_size = os.stat(super().get_attention_model_path()).st_size / 10**6
 
         # Getting number of epoch and encoder accuracy
-        training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
+        training_hist = pd.read_csv(super().get_training_hist_path()).iloc[-1,:]
         encoder_epoch = int(training_hist.epoch)
         encoder_accuracy = training_hist.accuracy
 
@@ -331,13 +344,13 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         print('Attention Model Size:', attention_model_size, 'MB')
 
         print('\nResult File Path')
-        print('Training Hist Path:', self.__training_hist_path)
-        print('Predicted Offset Path:', self.__array_diff_path)
-        print('MSE Log Path:', self.__mse_log_path)
-        print('Full Model Path:', self.__full_model_path)
-        print('Encoder Model Path:', self.__encoder_model_path)
-        print('Decoder Model Path:', self.__decoder_model_path)
-        print('Attention Model Path:', self.__attention_model_path)
+        print('Training Hist Path:', super().get_training_hist_path())
+        print('Predicted Offset Path:', super().get_array_diff_path())
+        print('MSE Log Path:', super().get_mse_log_path())
+        print('Full Model Path:', super().get_full_model_path())
+        print('Encoder Model Path:', super().get_encoder_model_path())
+        print('Decoder Model Path:', super().get_decoder_model_path())
+        print('Attention Model Path:', super().get_attention_model_path())
 
     def train_only (self) -> None :
         # Report Configuration
