@@ -303,10 +303,10 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         offset_list, mse = self.calculate_diff_error(pred)
 
         # Getting Model Size in MB (convert from byte)
-        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
-        encoder_model_size = os.stat(self.__encoder_model_path).st_size / 10**6
-        decoder_model_size = os.stat(self.__decoder_model_path).st_size / 10**6
-        attention_model_size = os.stat(self.__attention_model_path).st_size / 10**6
+        full_model_size = os.stat(super().get_full_model_path()).st_size / 10**6
+        encoder_model_size = os.stat(super().get_encoder_model_path()).st_size / 10**6
+        decoder_model_size = os.stat(super().get_decoder_model_path()).st_size / 10**6
+        attention_model_size = os.stat(super().get_attention_model_path()).st_size / 10**6
 
         # Getting number of epoch and encoder accuracy
         training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
@@ -355,10 +355,10 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         build_model_time = time.time() - start_time
 
         # Getting Model Size in MB (convert from byte)
-        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
+        full_model_size = os.stat(super().get_full_model_path()).st_size / 10**6
 
         # Getting number of epoch and encoder accuracy
-        training_hist = pd.read_csv(self.__training_hist_path).iloc[-1,:]
+        training_hist = pd.read_csv(super().get_training_hist_path()).iloc[-1,:]
         encoder_epoch = int(training_hist.epoch)
         encoder_accuracy = training_hist.accuracy
 
@@ -399,10 +399,10 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         offset_list, mse, accuracy = self.calculate_diff_error(pred)
 
         # Getting Model Size in MB (convert from byte)
-        full_model_size = os.stat(self.__full_model_path).st_size / 10**6
-        encoder_model_size = os.stat(self.__encoder_model_path).st_size / 10**6
-        decoder_model_size = os.stat(self.__decoder_model_path).st_size / 10**6
-        attention_model_size = os.stat(self.__attention_model_path).st_size / 10**6
+        full_model_size = os.stat(super().get_full_model_path()).st_size / 10**6
+        encoder_model_size = os.stat(super().get_encoder_model_path()).st_size / 10**6
+        decoder_model_size = os.stat(super().get_decoder_model_path()).st_size / 10**6
+        attention_model_size = os.stat(super().get_attention_model_path()).st_size / 10**6
 
         print('\nExperiment Done in ', load_data_time + model_loading_time + transform_model_time + prediction_time, 'sec(s)')
 

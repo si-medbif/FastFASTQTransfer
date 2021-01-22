@@ -59,7 +59,7 @@ class Seq2SeqExperimentInterface :
     def get_encoder_model_path (self) -> str:
         return self.__encoder_model_path
     
-    def get_decoder_path (self) -> str:
+    def get_decoder_model_path (self) -> str:
         return self.__decoder_model_path
     
     def get_attention_model_path (self) -> str:
