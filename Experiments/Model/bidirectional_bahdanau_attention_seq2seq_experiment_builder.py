@@ -158,6 +158,9 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         # Save training stat to file
         generate_training_statistic_file(training_hist, self.__experiment_name, destination_file_path = super().get_training_hist_path())
 
+        # Force save model to file
+        model.save(super().get_full_model_path())
+
         self.__full_model = model
 
     def transform_model (self) -> None :
