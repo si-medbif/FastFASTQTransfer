@@ -11,7 +11,7 @@ from utilities import generate_training_statistic_file, calculate_distance_from_
 from Configuration import Configuration
 
 # Seq2Seq Model Experiment
-# INPUT: Feature File Path, Destination Hist Path, Model Path, Array Diff Path, MSE Progress File, Experiment Name
+# INPUT: Feature File Path
 # OUTPUT: History File, Model File, Array Diff Result
 
 def load_data_from_file (feature_file_path, configuration) :
@@ -239,18 +239,24 @@ def plot_diff_distribution (diff_file_path, experiment_name:str, configuration: 
 def main(args) :
     # Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
 
+    latent_dim = 1024
+    batch_size = 10
+    base_learning_rate = 0.001
+    seq_num=10000
+
     feature_file_path = args[1]
-    destination_training_hist_path = args[2]
-    model_path = args[3]
-    array_diff_path = args[4]
-    mse_progress_log_path = args[5]
-    experiment_name = args[6]
+    destination_training_hist_path = 'Results/model_experiment/training_stat/seq2seq'
+    model_path = 'Results/model_experiment/model/seq2seq'
+    array_diff_path = 'Results/model_experiment/predicted_diff'
+    mse_progress_log_path = 'Result/model_experiment/mse_log'
+    experiment_name = 'seq2seq_L' + str(latent_dim) + '_Lr'+ str(base_learning_rate).replace('.', '-') + '_BS' + str(batch_size) + '_' + str(seq_num) 
 
     configuration = Configuration(
-        experiment_name = experiment_name,
-        latent_dim=1024,
-        batch_size=10,
-        base_learning_rate=0.001
+        experiment_name = 'Seq2Seq',
+        latent_dim=latent_dim,
+        batch_size=batch_size,
+        base_learning_rate=base_learning_rate,
+        seq_num=seq_num
     )
 
     encoder_model_full_path = model_path + '/' + experiment_name + '_encoder.h5'
@@ -258,12 +264,12 @@ def main(args) :
     array_diff_full_file_name = array_diff_path + '/' + experiment_name + '.diff'
     mse_log_full_file_name = mse_progress_log_path + '/' + experiment_name + '_MSE.csv'
 
-    # encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
+    encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
 
-    # encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
+    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
     # encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     # mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
-    plot_diff_distribution(array_diff_full_file_name, experiment_name, configuration)
+    # plot_diff_distribution(array_diff_full_file_name, experiment_name, configuration)
     
 if __name__ == "__main__":
     main(sys.argv)
