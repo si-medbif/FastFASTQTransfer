@@ -76,41 +76,45 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     model.compile(
         optimizer=RMSprop(lr=configuration.base_learning_rate), loss=configuration.loss, metrics=["accuracy"])
     
-    training_hist = model.fit(
+    training_hist_1 = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
         batch_size=configuration.batch_size,
         epochs=100
     )
-    
-    # Save Training Stat (Round 1)
-    generate_training_statistic_file(training_hist, configuration.experiment_name + '_1', destination_file_path = training_hist_folder_path)
 
     #Train the model round 2
     model.compile(
         optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2), loss=configuration.loss, metrics=["accuracy"])
-    training_hist = model.fit(
+    training_hist_2 = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
         batch_size=configuration.batch_size,
         epochs=500
     )
 
-    # Save Training Stat (Round 2)
-    generate_training_statistic_file(training_hist, configuration.experiment_name + '_2', destination_file_path = training_hist_folder_path)
-
     #Train the model round 3
     model.compile(
         optimizer=RMSprop(lr=configuration.base_learning_rate * 0.2 * 0.2), loss=configuration.loss, metrics=["accuracy"])
-    training_hist = model.fit(
+    training_hist_3 = model.fit(
         [encoder_input_data, decoder_input_data],
         decoder_target_data,
         batch_size=configuration.batch_size,
         epochs=100
     )
 
-    # Save Training Stat (Round 3)
-    generate_training_statistic_file(training_hist, configuration.experiment_name + '_3', destination_file_path = training_hist_folder_path)
+    # Merge Training Hist
+    training_hist_1 = pd.DataFrame(training_hist_1.history) #100 Epoch
+    training_hist_2 = pd.DataFrame(training_hist_2.history) #500 Epoch
+    training_hist_3 = pd.DataFrame(training_hist_3.history) #100 Epoch
+
+    training_hist_2['epoch'] += 100 # 100
+    training_hist_3['epoch'] += 600 # 100 + 500
+
+    merged_result = pd.concat([training_hist_1, training_hist_2, training_hist_3])
+    
+    # Save Training Stat
+    merged_result.to_csv(training_hist_folder_path + '/' + experiment_name + '.model_hist', index=False)
 
     # Save Model
     model.save(model_path)        
@@ -239,7 +243,7 @@ def plot_diff_distribution (diff_file_path, experiment_name:str, configuration: 
 def main(args) :
     # Feature File Path, Destination Hist Path, Model Path, Array Diff Path, Experiment Name
 
-    latent_dim = 1024
+    latent_dim = 512
     batch_size = 10
     base_learning_rate = 0.001
     seq_num=10000
