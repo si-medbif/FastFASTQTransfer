@@ -164,6 +164,8 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
 
     accum_sigma_distance = 0
 
+    predicted_correct_count = 0
+
     diff_result_file = open(array_diff_full_path, 'w')
 
     for data_index in range(0, len(decoder_target_data)) :
@@ -214,12 +216,14 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
 
         mse_progress_file.write(str(current_mse) + '\n')
 
+        predicted_correct_count += diff_array.tolist().count(0)
+
         print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', current_mse)
 
     # Close result file
     diff_result_file.close()
 
-    return current_mse
+    return current_mse, predicted_correct_count/((data_index+1)/configuration.seq_num)
 
 def plot_diff_distribution (diff_file_path, experiment_name:str, configuration: Configuration) :
     diff_dist, no_of_read, no_of_item = offset_distribution_finder(diff_file_path)
@@ -272,7 +276,8 @@ def main(args) :
 
     encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
     # encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
-    # mse = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
+    # mse, accuracy = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
+    # print('MSE:', mse, 'Accuracy:', accuracy)
     # plot_diff_distribution(array_diff_full_file_name, experiment_name, configuration)
     
 if __name__ == "__main__":
