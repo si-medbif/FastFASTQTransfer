@@ -108,8 +108,9 @@ def generate_encoder_model (feature_file_path, configuration, training_hist_fold
     training_hist_2 = pd.DataFrame(training_hist_2.history) #500 Epoch
     training_hist_3 = pd.DataFrame(training_hist_3.history) #100 Epoch
 
-    training_hist_2['epoch'] += 100 # 100
-    training_hist_3['epoch'] += 600 # 100 + 500
+    training_hist_1['epoch'] = [i+1 for i in range(len(training_hist_1))]
+    training_hist_2['epoch'] += [i+1+100 for i in range(len(training_hist_2))] # 100
+    training_hist_3['epoch'] += [i+1+600 for i in range(len(training_hist_3))] # 100 # 100 + 500
 
     merged_result = pd.concat([training_hist_1, training_hist_2, training_hist_3])
     
@@ -217,13 +218,14 @@ def predict_from_file (feature_file_path, encoder_model, decoder_model, configur
         mse_progress_file.write(str(current_mse) + '\n')
 
         predicted_correct_count += diff_array.tolist().count(0)
+        accuracy = predicted_correct_count / ((data_index + 1) * configuration.seq_len)
 
-        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', current_mse)
+        print('Predicted', data_index + 1 , ' of ', configuration.seq_num, "(", ((data_index+1)/configuration.seq_num)*100, ' %) with MSE', round(current_mse,4), 'Accuracy', round(accuracy,4))
 
     # Close result file
     diff_result_file.close()
 
-    return current_mse, predicted_correct_count/((data_index+1)/configuration.seq_num)
+    return current_mse, accuracy
 
 def plot_diff_distribution (diff_file_path, experiment_name:str, configuration: Configuration) :
     diff_dist, no_of_read, no_of_item = offset_distribution_finder(diff_file_path)
@@ -256,7 +258,7 @@ def main(args) :
     destination_training_hist_path = 'Results/model_experiment/training_stat/seq2seq'
     model_path = 'Results/model_experiment/model/seq2seq'
     array_diff_path = 'Results/model_experiment/predicted_diff'
-    mse_progress_log_path = 'Result/model_experiment/mse_log'
+    mse_progress_log_path = 'Results/model_experiment/mse_log'
     experiment_name = 'seq2seq_L' + str(latent_dim) + '_Lr'+ str(base_learning_rate).replace('.', '-') + '_BS' + str(batch_size) + '_' + str(seq_num) 
 
     configuration = Configuration(
@@ -274,7 +276,7 @@ def main(args) :
 
     encoder_model = generate_encoder_model(feature_file_path, configuration, destination_training_hist_path, encoder_model_full_path, experiment_name)
 
-    encoder_model = 'Results/model_experiment/model/seq2seq/seq2seq_L1024_Lr0-001_BS10_10000_encoder.h5'
+    # encoder_model = 'Results/model_experiment/training_stat_seq2seq/seq2seq_L512_Lr0-001_BS10_10000_encoder.h5'
     # encoder_model, decoder_model = convert_to_decoder_model (encoder_model, configuration, decoder_model_full_path) 
     # mse, accuracy = predict_from_file(feature_file_path, encoder_model, decoder_model, configuration, array_diff_full_file_name, mse_log_full_file_name)
     # print('MSE:', mse, 'Accuracy:', accuracy)
