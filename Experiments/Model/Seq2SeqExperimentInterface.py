@@ -35,7 +35,6 @@ class Seq2SeqExperimentInterface :
 
     # Name and Path Generator (Need static getter <- Don't want modified path)
     def __generate_experiment_name (self) -> str :
-        print(self.__configuration.latent_dim)
         if self.__configuration.batch_size < 1 :
             batch_size_in_name = 'm' + str(self.__configuration.batch_size).replace('.', '-')
         else :
