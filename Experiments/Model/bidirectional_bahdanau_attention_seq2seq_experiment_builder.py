@@ -55,7 +55,7 @@ class BidirectionalBahdanauAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentI
         offset_file = open(super().get_array_diff_path(),'w')
 
         for line in offset :
-            offset_file.write(str(line).replace('[','').replace(']',''))
+            offset_file.write(str(line).replace('[','').replace(']','') + '\n')
         
         offset_file.close()
 
