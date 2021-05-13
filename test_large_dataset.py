@@ -522,16 +522,16 @@ def main (args) :
     #     'steps_per_epoch': 20000
     # }
 
-    # model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
-    #     LSTM(model_configuration['input_dim']),
-    #     Dense(500, activation='relu'),
-    #     Dense(500, activation='relu'),
-    #     Dense(500, activation='relu'),
-    #     Dense(500, activation='relu'),
-    #     Dense(500, activation='relu'),
-    #     Dense(model_configuration['output_dim'], activation='relu')
+    model_training_experiment_set(feature_file_path, model_configuration, layer_configuration = [
+        LSTM(model_configuration['input_dim'], input_dim=90),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(500, activation='relu'),
+        Dense(model_configuration['output_dim'], activation='relu')
 
-    # ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_30')
+    ], is_lstm=True, model_position=None, loss='mse', experiment_name='Model_30')
 
     # # END OF EXPERIMENT 30
 

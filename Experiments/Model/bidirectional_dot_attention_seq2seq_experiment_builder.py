@@ -55,6 +55,8 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
 
         print(self.__experiment_name, ' has been created')
 
+        self.__report_configuration()
+
     # Utilities Functions
     def __get_real_batch_size (self) -> int :
         # If Batch Size is multiply so input as decimal
@@ -70,6 +72,24 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
             destination_file.write(str(read)[1:-1].replace(' ', '') + '\n')
 
         destination_file.close()
+
+    def __report_configuration (self) -> None :
+        # Report Configuration
+        print('Running ', self.__experiment_name, 'with the following configuration')
+        print('Dataset:', self.__configuration.seq_num, 'read(s) from', self.__feature_file_path.split('/')[-1], ',', self.__configuration.seq_len, 'base(s) per read')
+        print('latent_dim:', self.__configuration.latent_dim)
+        print('num_encoder_tokens:', self.__configuration.num_encoder_tokens)
+        print('num_decoder_tokens:', self.__configuration.num_decoder_tokens)
+        print('num_encoder_embed:', self.__configuration.num_encoder_embed)
+        print('num_decoder_embed:', self.__configuration.num_decoder_embed)
+        print('base_learning_rate:', self.__configuration.base_learning_rate)
+
+        if self.__configuration.batch_size < 1 :    
+            print('batch_size: multiply with ', self.__configuration.batch_size, '(' , self.__configuration.batch_size * self.__configuration.seq_num, ')')
+        else :
+            print('batch_size:', self.__configuration.batch_size)
+
+        print('loss:', str(self.__configuration.loss), '\n')
 
     def load_full_model (self, full_model_path: str) -> None:
         self.__full_model_path = full_model_path
@@ -478,9 +498,36 @@ class BidirectionalDotAttentionSeq2SeqExperimentBuilder (Seq2SeqExperimentInterf
         print('Encoder Model Path:', self.__encoder_model_path)
         print('Decoder Model Path:', self.__decoder_model_path)
         print('Attention Model Path:', self.__attention_model_path)
+
+    def cal_result_from_file (self) :
+        diff_file = open(self.__array_diff_path, 'r')
+        diff_container = list()
+
+        no_of_item = 0
+        no_of_correct = 0
+        square_diff = 0
+
+        line = diff_file.readline()
+
+        while line != '' :
+            line_component = line.rstrip().split(',')
+            diff_container = [int(item) for item in line_component]
+
+            for item in diff_container :
+                no_of_item += 1
+                square_diff += item**2
+
+                if item == 0 :
+                    no_of_correct += 1    
+
+            line = diff_file.readline()
+
+        diff_file.close()
         
+        # Return (accuracy, mse)
+        return no_of_correct/no_of_item, square_diff/no_of_item
+
 def main(args) :
-    feature_file = args[1]
     
     # Sample Experiment 
     sample_experiment = BidirectionalDotAttentionSeq2SeqExperimentBuilder (
@@ -491,7 +538,7 @@ def main(args) :
         num_decoder_tokens = 42,
         num_encoder_embed = 2,
         num_decoder_embed = 32,
-        seq_num= 90000,
+        seq_num= 30000,
         seq_len = 90,
         base_learning_rate=0.001,
         batch_size=0.001,
@@ -499,12 +546,15 @@ def main(args) :
         )
     )
 
+    decoder_accuracy, mse = sample_experiment.cal_result_from_file()
+    print('Decoder Accuracy', decoder_accuracy, 'MSE', mse)
+
     # Easier method -> run whole pipeline
-    # sample_experiment.run()
+    sample_experiment.run()
 
     # Got the full model ? -> Predict only option
     # sample_experiment.predict_only(<Model Path>)
-    sample_experiment.predict_only('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L256_E32_Lr0-001_BSm0-001_90000.h5')
+    # sample_experiment.predict_only('Results/model_experiment/model/seq2seq/Seq2Seq_Bidirectional_DotAttention_L256_E32_Lr0-001_BSm0-001_90000.h5')
     
     # Loading Dataset
     # sample_experiment.load_data()
@@ -519,7 +569,7 @@ def main(args) :
     # sample_experiment.transform_model()
 
     # Predict Data
-    # pred = sample_experiment.predict_data()
+    pred = sample_experiment.predict_data()
 
     # Calculate offset between actual and predicted data and mse log -> write to file
     # offset_list, mse, accuracy = sample_experiment.calculate_diff_error(pred)
